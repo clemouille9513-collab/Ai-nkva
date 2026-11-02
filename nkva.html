@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NKVA v2</title>
+<style>
+  :root{--bg:#0b0f1a;--panel:#111833;--panel2:#1a2447;--line:#222c4a;--me:#2563eb;--bot:#1c2540;--txt:#e8ecf7;--mut:#8a94b2;--acc:#22d3ee;--ok:#34d399;--warn:#fbbf24;--err:#f87171}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;height:100dvh;overflow:hidden}
+  button{font-family:inherit}
+  nav#rail{width:190px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 8px;gap:4px}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+  .logo{width:38px;height:38px;flex:none;border-radius:12px;background:linear-gradient(135deg,var(--acc),#6366f1);display:grid;place-items:center;font-weight:800;color:#06101c}
+  .brand b{letter-spacing:2px}.brand small{display:block;color:var(--mut);font-size:11px}
+  .tab{display:flex;align-items:center;gap:12px;padding:12px;border:0;background:none;color:var(--mut);border-radius:12px;cursor:pointer;font-size:15px;text-align:left}
+  .tab:hover{background:#151d3b}.tab.on{background:var(--panel2);color:var(--txt)}
+  .tab .ic{font-size:20px;width:24px;text-align:center}
+  @media(max-width:700px){nav#rail{width:58px;padding:10px 4px}.lbl,.brand div:last-child{display:none}.brand{justify-content:center;padding:4px 0 12px}.tab{justify-content:center;padding:12px 0}}
+  #views{flex:1;min-width:0;position:relative}
+  .view{display:none;height:100%;flex-direction:column}.view.on{display:flex}
+  .scroll{flex:1;overflow-y:auto;padding:16px}
+  h2{font-size:18px;margin-bottom:10px}
+  /* chat */
+  #chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+  .msg{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;animation:in .2s ease}
+  .bot{background:var(--bot);align-self:flex-start;border-bottom-left-radius:4px}
+  .me{background:var(--me);align-self:flex-end;border-bottom-right-radius:4px}
+  .typing{display:flex;gap:4px;padding:14px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--mut);animation:b 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 0;flex:none}
+  .chips button,.btn{white-space:nowrap;background:transparent;color:var(--acc);border:1px solid #1f4b5a;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .chips button:hover,.btn:hover{background:#0e2a35}
+  .btn.solid{background:linear-gradient(135deg,var(--acc),#6366f1);border:0;color:#06101c;font-weight:700}
+  .btn.danger{color:var(--err);border-color:#5a2a2a}
+  #chatform{display:flex;gap:8px;padding:12px 16px 16px;align-items:flex-end;flex:none}
+  textarea,input[type=text]{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:12px 16px;border-radius:18px;font-size:16px;outline:none;font-family:inherit}
+  #in{flex:1;resize:none;max-height:140px;height:46px}
+  textarea:focus,input[type=text]:focus{border-color:var(--acc)}
+  .round{width:46px;height:46px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:20px;cursor:pointer}
+  .send{background:linear-gradient(135deg,var(--acc),#6366f1);border:0;color:#06101c;font-weight:700;padding:0 20px;border-radius:999px;height:46px;cursor:pointer;font-size:15px}
+  /* code blocks */
+  .cb{margin:8px 0 2px;background:#0a0f20;border:1px solid var(--line);border-radius:12px;overflow:hidden;white-space:normal}
+  .cbh{display:flex;gap:6px;align-items:center;padding:6px 8px;background:#101733;font-size:12px;color:var(--mut)}
+  .cbh span{flex:1;text-transform:uppercase;letter-spacing:1px}
+  .cbh button{background:#1a2447;color:var(--txt);border:0;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer}
+  .cb pre{padding:10px 12px;overflow:auto;max-height:340px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre;color:#cfe3ff}
+  .thumb{max-width:100%;max-height:220px;border-radius:12px;display:block;margin-bottom:6px}
+  .swatches{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .sw{border-radius:10px;padding:8px 10px;font:11px monospace;min-width:74px;text-align:center;border:1px solid rgba(255,255,255,.15)}
+  .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  /* code tab */
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+  #gen{flex:1;min-width:160px;border-radius:999px;padding:10px 16px}
+  #ed{width:100%;min-height:240px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;border-radius:12px;white-space:pre;resize:vertical;tab-size:2}
+  select{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:14px}
+  #cout{margin-top:12px}
+  .rep{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;white-space:pre-wrap;line-height:1.5}
+  .it{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #1b2547;font-size:14px}
+  .it:last-child{border:0}.it b{flex:none;min-width:58px;font-size:12px;padding-top:2px}
+  .it.err b{color:var(--err)}.it.warn b{color:var(--warn)}.it.info b{color:var(--acc)}.it.ok b{color:var(--ok)}
+  .runframe{width:100%;height:320px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .con{background:#0a0f20;border:1px solid var(--line);border-radius:12px;margin-top:8px;padding:8px 10px;font:12.5px/1.5 monospace;max-height:160px;overflow:auto;min-height:34px}
+  .cl.error{color:var(--err)}.cl.warn{color:var(--warn)}
+  #modal{position:fixed;inset:0;background:rgba(5,8,18,.92);z-index:50;display:none;flex-direction:column;padding:12px}
+  #modal.on{display:flex}#modal .runframe{flex:1;height:auto}
+  /* photo */
+  #drop{border:2px dashed #2b3a6b;border-radius:16px;padding:22px;text-align:center;color:var(--mut)}
+  #drop.over{border-color:var(--acc);color:var(--txt)}
+  /* mem */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #1b2547;font-size:14px}
+  .li:last-child{border:0}.li span{flex:1;word-break:break-word}
+  .li button{background:none;border:0;color:var(--err);cursor:pointer;font-size:16px}
+  .mut{color:var(--mut);font-size:13px}
+
+  .bar{width:100%;height:10px;border-radius:99px;overflow:hidden;background:#1b2547;margin:10px 0 6px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#6366f1);transition:width .2s}
+  .pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;background:#1b2547;color:var(--mut)}
+  .pill.on{background:#0f3d2e;color:var(--ok)}
+  ul.plain{padding-left:18px;line-height:1.7}
+</style>
+</head>
+<body>
+<nav id="rail"></nav>
+<main id="views">
+  <!-- CHAT -->
+  <section class="view on" id="v-chat">
+    <div id="chat"></div>
+    <div class="chips" id="chips"></div>
+    <form id="chatform" autocomplete="off">
+      <button type="button" class="round" id="attach" title="Envoyer une photo">📎</button>
+      <input type="file" id="chatfile" accept="image/*" hidden>
+      <textarea id="in" rows="1" placeholder="Écris, colle du code ou envoie une photo…"></textarea>
+      <button class="send">Envoyer</button>
+    </form>
+  </section>
+  <!-- CODE -->
+  <section class="view" id="v-code">
+    <div class="scroll">
+      <h2>💻 Atelier de code</h2>
+      <div class="row">
+        <input type="text" id="gen" placeholder="Que veux-tu que je code ? (snake, calculatrice, fetch…)">
+        <button class="btn solid" id="genbtn" type="button">Générer</button>
+      </div>
+      <div class="chips" id="tplchips" style="padding:0 0 10px"></div>
+      <div class="row">
+        <select id="lang"><option value="auto">Langage : auto</option><option value="js">JavaScript</option><option value="html">HTML</option><option value="css">CSS</option><option value="python">Python</option><option value="json">JSON</option><option value="sql">SQL</option></select>
+        <button class="btn" data-a="analyze">🔍 Analyser</button>
+        <button class="btn" data-a="run">▶ Exécuter</button>
+        <button class="btn" data-a="format">✨ Formater</button>
+        <button class="btn" data-a="minify">🗜️ Minifier</button>
+        <button class="btn" data-a="explain">📖 Expliquer</button>
+        <button class="btn" data-a="copy">Copier</button>
+        <button class="btn danger" data-a="clear">Vider</button>
+      </div>
+      <textarea id="ed" spellcheck="false" placeholder="Colle ou écris ton code ici…"></textarea>
+      <div id="cout"></div>
+    </div>
+  </section>
+  <!-- VRAIE IA -->
+  <section class="view" id="v-ia">
+    <div class="scroll">
+      <h2>🤖 Vraie IA (modèle de langage local)</h2>
+      <div class="card">
+        <p>Active un vrai modèle de langage qui tourne <b>dans ton navigateur</b> : pas d’API, pas de serveur. Il comprend n’importe quelle phrase, répond à tout, écrit et corrige du code. Une fois téléchargé, il marche <b>hors ligne</b>.</p>
+        <p class="mut" style="margin-top:8px">Téléchargement unique (≈ 1 à 2,5 Go) : fais-le en Wi-Fi. Il faut un navigateur avec WebGPU (Chrome récent sur PC ou Android).</p>
+        <div class="row" style="margin-top:12px">
+          <select id="llmsel">
+            <option value="Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 Coder 1.5B — fort en code (~1 Go) ★</option>
+            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 1.5B — général, bon en français (~1 Go)</option>
+            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B — très léger (~0,9 Go)</option>
+            <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Qwen2.5 3B — plus intelligent (~2 Go)</option>
+            <option value="Phi-3.5-mini-instruct-q4f16_1-MLC">Phi 3.5 mini — raisonnement (~2,4 Go)</option>
+            <optgroup label="Mode compatible (marche SANS WebGPU, plus lent)">
+              <option value="tjs:HuggingFaceTB/SmolLM2-135M-Instruct">SmolLM2 135M — TRÈS léger, anti-plantage (~0,15 Go) ★ téléphone</option>
+              <option value="tjs:onnx-community/Qwen2.5-Coder-0.5B-Instruct">Qwen2.5 Coder 0.5B — code (~0,4 Go) ★ conseillé</option>
+              <option value="tjs:onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B — général (~0,4 Go)</option>
+              <option value="tjs:HuggingFaceTB/SmolLM2-360M-Instruct">SmolLM2 360M — ultra léger (~0,4 Go)</option>
+            </optgroup>
+          </select>
+          <button class="btn solid" id="llmgo" type="button">⬇ Télécharger et activer</button>
+          <span class="pill" id="llmpill">désactivée</span>
+        </div>
+        <div class="bar"><i id="llmbar"></i></div>
+        <div class="mut" id="llmtxt">Pas encore chargée.</div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="llmdiag" type="button">🩺 Diagnostic</button></div>
+        <pre id="llmdiagout" class="rep" style="display:none;font-size:12px"></pre>
+      </div>
+      <div class="card">
+        <b>⚡ Option rapide : IA native sur ton téléphone (Termux)</b>
+        <p class="mut" style="margin:8px 0">Bien plus rapide et fiable que dans le navigateur : Termux fait tourner le modèle, NKVA s’y connecte. Aucune API externe, tout reste sur ton téléphone.</p>
+        <pre class="rep" style="font-size:12px;user-select:all;white-space:pre-wrap">pkg install -y clang wget cmake git
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+cmake -B build &amp;&amp; cmake --build build --config Release
+wget https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf
+./build/bin/llama-server -m Qwen2.5-1.5B-Instruct-Q4_K_M.gguf -c 4096</pre>
+        <p class="mut">La compilation dure un moment. Laisse Termux ouvert (réduit) : le serveur écoute sur le port 8080. Si la compilation échoue sur « spawn.h », fais : pkg install libandroid-spawn</p>
+        <div class="row" style="margin-top:10px">
+          <input type="text" id="srvurl" value="http://127.0.0.1:8080" style="flex:1;min-width:180px;border-radius:999px;padding:10px 16px">
+          <button class="btn solid" id="srvgo" type="button">🔌 Connecter</button>
+        </div>
+        <div class="mut" id="srvtxt" style="margin-top:6px">Non connecté. NKVA se connecte tout seul à l’ouverture si le serveur tourne.</div>
+      </div>
+      <div class="card">
+        <b>Une fois activée</b>
+        <ul class="plain">
+          <li>Tout ce que tu écris dans le chat (ou colles : code, erreurs…) lui est envoyé.</li>
+          <li>Si tu as envoyé une photo, son analyse (couleurs, luminosité…) est transmise au modèle.</li>
+          <li>Elle connaît ton prénom et les faits que tu lui fais retenir.</li>
+          <li>Les commandes rapides (calcul, heure, binaire, mémoire) restent instantanées.</li>
+        </ul>
+        <p class="mut" style="margin-top:8px">Ces petits modèles sont bien meilleurs que mes règles, mais restent moins forts que ChatGPT ou Claude : ils peuvent se tromper. Le modèle 3B est le plus fiable si ton appareil tient.</p>
+      </div>
+    </div>
+  </section>
+  <!-- PHOTO -->
+  <section class="view" id="v-photo">
+    <div class="scroll">
+      <h2>🖼️ Analyse de photo</h2>
+      <div id="drop">
+        Glisse une photo ici, colle-la (Ctrl+V) ou choisis-la<br><br>
+        <button class="btn solid" id="pick" type="button">📁 Choisir une image</button>
+        <button class="btn" id="cam" type="button">📷 Prendre une photo</button>
+        <input type="file" id="pf" accept="image/*" hidden>
+        <input type="file" id="pcam" accept="image/*" capture="environment" hidden>
+      </div>
+      <div id="pout"></div>
+    </div>
+  </section>
+  <!-- MEMOIRE -->
+  <section class="view" id="v-mem">
+    <div class="scroll" id="memroot"></div>
+  </section>
+  <!-- INFOS -->
+  <section class="view" id="v-info">
+    <div class="scroll">
+      <h2>ℹ️ À propos de NKVA v2</h2>
+      <div class="card">
+        <b>Comment ça marche</b>
+        <ul class="plain">
+          <li>Tout tourne dans cette page : aucune API, aucun serveur, aucun envoi de données.</li>
+          <li>Les photos sont analysées sur ton appareil (canvas) et ne quittent jamais la page.</li>
+          <li>NKVA comprend par mots-clés, ressemblance de phrases (TF-IDF) et fautes de frappe tolérées.</li>
+          <li>Il apprend ce que tu lui enseignes et le garde dans ton navigateur.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <b>Ce qu’il sait faire en code</b>
+        <ul class="plain">
+          <li>Générer des projets complets : snake, morpion, pong, calculatrice, to-do, chrono, dessin…</li>
+          <li>Analyser du code HTML / CSS / JS / Python / JSON : erreurs de syntaxe, balises non fermées, fautes de frappe CSS, mauvaises pratiques.</li>
+          <li>Exécuter HTML, CSS et JavaScript dans un bac à sable avec console.</li>
+          <li>Formater, minifier, expliquer du code et décoder des messages d’erreur courants.</li>
+          <li>Répondre à ~60 questions de programmation (variables, async, flexbox, git, SQL…).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <b>Ce qu’il ne fait pas</b>
+        <p class="mut" style="margin-top:6px">NKVA n’est pas un grand modèle de langage : il n’invente pas de réponses sur des sujets qu’il ne connaît pas, et sa « vision » est une analyse de pixels (couleurs, luminosité, netteté, formes), pas une vraie reconnaissance d’objets. Plus tu lui apprends de choses, plus il progresse.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="modal"><div class="row"><button class="btn solid" id="mclose" type="button">✕ Fermer</button><span class="mut">Exécution dans un bac à sable</span></div><div id="mbody" style="flex:1;display:flex;flex-direction:column;min-height:0"></div></div>
+
+<!-- ============ DONNÉES (sans DOM) ============ -->
+<script id="data">
+const SCL='<'+'/script>';
+const CMT=new RegExp('<!'+'--[\\s\\S]*?--'+'>','g');
+
+/* ---------- Outils de langue ---------- */
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,' ').replace(/[^a-z0-9+\-*/().,%^=\s]/g,' ').replace(/\s+/g,' ').trim();
+const STOP=new Set('le la les un une des de du d l je tu il elle on nous vous ils elles et ou a as est es suis sont que qui quoi ce cet cette ca c en y au aux mon ma mes ton ta tes son sa ses me te se moi toi pour par sur dans avec sans pas ne n qu s t m j explique expliquer dis donne donner fais faire peux veux comment quel quelle quels quelles svp stp plait sil il faut possible savoir sait sert servir ya cest'.split(' '));
+const tokens=s=>norm(s).split(' ').filter(Boolean);
+const keyTokens=s=>tokens(s).filter(t=>!STOP.has(t));
+function lev(a,b){
+  if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  let prev=Array.from({length:n+1},(_,i)=>i);
+  for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}
+  return prev[n];
+}
+function sameWord(a,b){
+  if(a===b)return 1;
+  if(a.length>4&&b.length>4&&lev(a,b)<=1)return .85;
+  if(a.length>6&&b.length>6&&lev(a,b)<=2)return .6;
+  return 0;
+}
+function scoreKeys(keys,text){
+  const full=' '+norm(text)+' ',toks=tokens(text);let best=0;
+  for(const kw of keys){
+    const kwn=norm(kw),parts=kwn.split(' ');
+    if(parts.length>1){
+      if(full.includes(' '+kwn+' '))best=Math.max(best,1.5+parts.length*.3);
+      else if(parts.every(p=>toks.some(t=>sameWord(t,p))))best=Math.max(best,1.1);
+    }else{
+      let s=0;for(const t of toks)s=Math.max(s,sameWord(t,kwn));
+      if(s)best=Math.max(best,s*(toks.length<=3?1.2:.9));
+    }
+  }
+  return best;
+}
+
+/* ---------- Modèles de code ---------- */
+const T=[];
+function tpl(id,title,lang,k,code){T.push({id,title,lang,k,code:code.replace(/\[\[\/S\]\]/g,SCL).replace(/^\n/,'')});}
+
+tpl('page','Page HTML de base','html',['page html','page web','squelette html','modele html','page simple','html de base'],String.raw`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ma page</title>
+<style>
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
+  h1{font-size:2.4rem;margin-bottom:12px}
+  button{margin-top:18px;padding:12px 22px;border:0;border-radius:999px;background:#22d3ee;color:#04202a;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+  <main>
+    <h1>Bonjour 👋</h1>
+    <p id="msg">Ceci est ma première page.</p>
+    <button id="btn">Clique-moi</button>
+  </main>
+  <script>
+    let n = 0;
+    document.getElementById('btn').addEventListener('click', () => {
+      n++;
+      document.getElementById('msg').textContent = 'Clics : ' + n;
+    });
+  [[/S]]
+</body>
+</html>
+`);
+
+tpl('snake','Snake','html',['snake','serpent'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snake</title>
+<style>body{margin:0;background:#0b1020;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px}canvas{background:#111a33;border-radius:12px;touch-action:none;max-width:100%}#pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px;margin-top:10px}#pad button{height:56px;font-size:22px;border:0;border-radius:12px;background:#22d3ee}</style></head><body>
+<h2>Snake — score : <span id="s">0</span></h2>
+<canvas id="c" width="360" height="360"></canvas>
+<div id="pad"><span></span><button data-d="U">↑</button><span></span><button data-d="L">←</button><button data-d="D">↓</button><button data-d="R">→</button></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),N=18,S=c.width/N;
+let snake,dir,next,food,score,over,timer;
+function reset(){snake=[{x:9,y:9},{x:8,y:9},{x:7,y:9}];dir={x:1,y:0};next=dir;score=0;over=false;placeFood();document.getElementById('s').textContent=0;clearInterval(timer);timer=setInterval(tick,120);}
+function placeFood(){do{food={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)};}while(snake.some(p=>p.x===food.x&&p.y===food.y));}
+function tick(){
+  if(over)return;
+  dir=next;
+  const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(h.x<0||h.y<0||h.x>=N||h.y>=N||snake.some(p=>p.x===h.x&&p.y===h.y)){over=true;draw();return;}
+  snake.unshift(h);
+  if(h.x===food.x&&h.y===food.y){score++;document.getElementById('s').textContent=score;placeFood();}else snake.pop();
+  draw();
+}
+function draw(){
+  x.clearRect(0,0,c.width,c.height);
+  x.fillStyle='#f43f5e';x.fillRect(food.x*S+2,food.y*S+2,S-4,S-4);
+  snake.forEach((p,i)=>{x.fillStyle=i?'#22d3ee':'#a5f3fc';x.fillRect(p.x*S+1,p.y*S+1,S-2,S-2);});
+  if(over){x.fillStyle='rgba(0,0,0,.6)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 24px sans-serif';x.textAlign='center';x.fillText('Perdu ! Touche pour rejouer',c.width/2,c.height/2);}
+}
+function turn(d){
+  const m={U:{x:0,y:-1},D:{x:0,y:1},L:{x:-1,y:0},R:{x:1,y:0}}[d];
+  if(m.x===-dir.x&&m.y===-dir.y)return;
+  next=m;
+}
+document.addEventListener('keydown',e=>{const k={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key];if(k){e.preventDefault();turn(k);}});
+document.querySelectorAll('#pad button').forEach(b=>b.onclick=()=>turn(b.dataset.d));
+c.addEventListener('click',()=>{if(over)reset();});
+let t0;c.addEventListener('touchstart',e=>{t0=e.touches[0];});
+c.addEventListener('touchend',e=>{if(over){reset();return;}const t=e.changedTouches[0],dx=t.clientX-t0.clientX,dy=t.clientY-t0.clientY;if(Math.abs(dx)>Math.abs(dy))turn(dx>0?'R':'L');else turn(dy>0?'D':'U');});
+reset();
+[[/S]]</body></html>
+`);
+
+tpl('morpion','Morpion contre une IA imbattable','html',['morpion','tic tac toe','tictactoe'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Morpion</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#fff;font-family:sans-serif;text-align:center}#g{display:grid;grid-template-columns:repeat(3,96px);gap:8px;margin:16px auto;width:max-content}#g button{height:96px;font-size:44px;border:0;border-radius:14px;background:#1c2540;color:#22d3ee;cursor:pointer}#r{padding:10px 18px;border:0;border-radius:999px;background:#22d3ee;font-weight:700}</style></head><body><div><h2 id="st">À toi (X)</h2><div id="g"></div><button id="r">Rejouer</button></div>
+<script>
+const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let b,over;const g=document.getElementById('g'),st=document.getElementById('st');
+function win(b){for(const [a,c,d] of L)if(b[a]&&b[a]===b[c]&&b[a]===b[d])return b[a];return b.every(Boolean)?'=':null;}
+function mm(b,p){const w=win(b);if(w==='O')return 1;if(w==='X')return -1;if(w==='=')return 0;let best=p==='O'?-2:2;for(let i=0;i<9;i++)if(!b[i]){b[i]=p;const s=mm(b,p==='O'?'X':'O');b[i]='';best=p==='O'?Math.max(best,s):Math.min(best,s);}return best;}
+function ai(){let bi=-1,bs=-2;for(let i=0;i<9;i++)if(!b[i]){b[i]='O';const s=mm(b,'X');b[i]='';if(s>bs){bs=s;bi=i;}}b[bi]='O';}
+function render(){g.innerHTML='';b.forEach((v,i)=>{const e=document.createElement('button');e.textContent=v;e.onclick=()=>play(i);g.appendChild(e);});}
+function end(){const w=win(b);if(w){over=true;st.textContent=w==='='?'Égalité !':(w==='X'?'Tu as gagné !':"L'IA a gagné !");}}
+function play(i){if(over||b[i])return;b[i]='X';end();if(!over){ai();end();}render();}
+function init(){b=Array(9).fill('');over=false;st.textContent='À toi (X)';render();}
+document.getElementById('r').onclick=init;init();
+[[/S]]</body></html>
+`);
+
+tpl('pong','Pong','html',['pong','ping pong'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pong</title><style>body{margin:0;background:#0b1020;display:grid;place-items:center;min-height:100vh;color:#fff;font-family:sans-serif}canvas{background:#111a33;border-radius:12px;max-width:100%;touch-action:none}</style></head><body><canvas id="c" width="480" height="320"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let p={y:130},a={y:130},ball,sc=[0,0];
+function serve(){ball={x:240,y:160,vx:(Math.random()<.5?-1:1)*4,vy:Math.random()*4-2};}
+serve();
+function move(y){p.y=Math.max(0,Math.min(240,y-40));}
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();move((e.clientY-r.top)*c.height/r.height);});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();move((e.touches[0].clientY-r.top)*c.height/r.height);},{passive:false});
+function loop(){
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.y<6||ball.y>314)ball.vy*=-1;
+  a.y+=Math.sign(ball.y-(a.y+40))*3.2;a.y=Math.max(0,Math.min(240,a.y));
+  if(ball.x<24&&ball.y>p.y&&ball.y<p.y+80&&ball.vx<0){ball.vx*=-1.07;ball.vy+=(ball.y-(p.y+40))/12;}
+  if(ball.x>456&&ball.y>a.y&&ball.y<a.y+80&&ball.vx>0){ball.vx*=-1.07;}
+  if(ball.x<0){sc[1]++;serve();}
+  if(ball.x>480){sc[0]++;serve();}
+  x.clearRect(0,0,480,320);x.fillStyle='#22d3ee';x.fillRect(10,p.y,8,80);x.fillRect(462,a.y,8,80);
+  x.fillStyle='#fff';x.beginPath();x.arc(ball.x,ball.y,6,0,7);x.fill();
+  x.font='28px sans-serif';x.textAlign='center';x.fillText(sc[0]+'  :  '+sc[1],240,34);
+  requestAnimationFrame(loop);
+}
+loop();
+[[/S]]</body></html>
+`);
+
+tpl('calc','Calculatrice','html',['calculatrice','calculette'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Calculatrice</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;font-family:sans-serif}#k{width:300px;padding:16px;background:#131a2b;border-radius:20px}#d{background:#0b1020;color:#fff;font-size:30px;text-align:right;padding:16px;border-radius:12px;min-height:38px;overflow:hidden;margin-bottom:12px}#b{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}button{padding:16px 0;font-size:20px;border:0;border-radius:12px;background:#1c2540;color:#fff;cursor:pointer}button.o{background:#22d3ee;color:#04202a}</style></head><body><div id="k"><div id="d">0</div><div id="b"></div></div>
+<script>
+const keys=['C','(',')','/','7','8','9','*','4','5','6','-','1','2','3','+','0','.','⌫','='];
+let e='';const d=document.getElementById('d'),b=document.getElementById('b');
+keys.forEach(k=>{const el=document.createElement('button');el.textContent=k;if('/*-+='.includes(k))el.className='o';el.onclick=()=>press(k);b.appendChild(el);});
+function press(k){
+  if(k==='C')e='';
+  else if(k==='⌫')e=e.slice(0,-1);
+  else if(k==='='){try{if(/^[0-9+\-*/().\s]+$/.test(e))e=String(Function('return '+e)());}catch(_){e='Erreur';}}
+  else{if(e==='Erreur')e='';e+=k;}
+  d.textContent=e||'0';
+}
+[[/S]]</body></html>
+`);
+
+tpl('todo','Liste de tâches (sauvegardée)','html',['todo','to do','liste de taches','taches','liste de tache'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>To-do</title><style>body{margin:0;background:#0b1020;color:#fff;font-family:sans-serif;display:flex;justify-content:center;padding:24px}main{width:100%;max-width:420px}form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:10px;border:0;font-size:16px}button{border:0;border-radius:10px;background:#22d3ee;padding:0 16px;font-weight:700;cursor:pointer}li{display:flex;justify-content:space-between;align-items:center;background:#131a2b;margin-top:8px;padding:12px;border-radius:10px;list-style:none}li.d span{text-decoration:line-through;opacity:.5}ul{padding:0}</style></head><body><main><h2>Mes tâches</h2><form id="f"><input id="i" placeholder="Nouvelle tâche…"><button>Ajouter</button></form><ul id="l"></ul></main>
+<script>
+let t=[];try{t=JSON.parse(localStorage.getItem('todo')||'[]');}catch(_){}
+const l=document.getElementById('l');
+function save(){try{localStorage.setItem('todo',JSON.stringify(t));}catch(_){}}
+function render(){l.innerHTML='';t.forEach((x,i)=>{const li=document.createElement('li');if(x.d)li.className='d';const s=document.createElement('span');s.textContent=x.t;s.onclick=()=>{x.d=!x.d;save();render();};const r=document.createElement('button');r.textContent='✕';r.onclick=()=>{t.splice(i,1);save();render();};li.append(s,r);l.appendChild(li);});}
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const v=document.getElementById('i').value.trim();if(v){t.push({t:v,d:false});document.getElementById('i').value='';save();render();}};
+render();
+[[/S]]</body></html>
+`);
+
+tpl('chrono','Chronomètre','html',['chrono','chronometre','minuteur','timer'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chrono</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#fff;font-family:monospace;text-align:center}#t{font-size:64px}button{margin:6px;padding:12px 20px;border:0;border-radius:999px;background:#22d3ee;font-weight:700;cursor:pointer}</style></head><body><div><div id="t">00:00.0</div><button id="a">Start</button><button id="b">Reset</button></div>
+<script>
+let ms=0,id=null,t0=0;const t=document.getElementById('t');
+function fmt(m){const s=m/1000;return String(Math.floor(s/60)).padStart(2,'0')+':'+(s%60).toFixed(1).padStart(4,'0');}
+document.getElementById('a').onclick=function(){if(id){clearInterval(id);id=null;this.textContent='Start';}else{t0=Date.now()-ms;id=setInterval(()=>{ms=Date.now()-t0;t.textContent=fmt(ms);},100);this.textContent='Pause';}};
+document.getElementById('b').onclick=()=>{clearInterval(id);id=null;ms=0;t.textContent='00:00.0';document.getElementById('a').textContent='Start';};
+[[/S]]</body></html>
+`);
+
+tpl('horloge','Horloge numérique','html',['horloge','clock','heure en direct'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horloge</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#05070f;color:#22d3ee;font-family:monospace}#h{font-size:min(18vw,110px);text-shadow:0 0 20px #22d3ee}#d{color:#8a94b2;text-align:center}</style></head><body><div><div id="h"></div><div id="d"></div></div>
+<script>
+function tick(){const n=new Date();document.getElementById('h').textContent=n.toLocaleTimeString('fr-FR');document.getElementById('d').textContent=n.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+tick();setInterval(tick,1000);
+[[/S]]</body></html>
+`);
+
+tpl('dessin','Appli de dessin (canvas)','html',['dessin','dessiner','canvas','paint'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dessin</title><style>body{margin:0;background:#0b1020;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px}canvas{background:#fff;border-radius:12px;touch-action:none;max-width:100%}button,input{border:0;border-radius:10px;padding:8px 12px}</style></head><body><div><input type="color" id="col" value="#2563eb"> <input type="range" id="sz" min="1" max="30" value="4"> <button id="clr">Effacer</button></div><canvas id="c" width="520" height="360"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');let on=false;
+function pos(e){const r=c.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height};}
+function start(e){e.preventDefault();on=true;const p=pos(e);x.beginPath();x.moveTo(p.x,p.y);}
+function move(e){if(!on)return;e.preventDefault();const p=pos(e);x.strokeStyle=document.getElementById('col').value;x.lineWidth=document.getElementById('sz').value;x.lineCap='round';x.lineTo(p.x,p.y);x.stroke();}
+['mousedown','touchstart'].forEach(n=>c.addEventListener(n,start,{passive:false}));
+['mousemove','touchmove'].forEach(n=>c.addEventListener(n,move,{passive:false}));
+['mouseup','mouseleave','touchend'].forEach(n=>c.addEventListener(n,()=>{on=false;}));
+document.getElementById('clr').onclick=()=>x.clearRect(0,0,c.width,c.height);
+[[/S]]</body></html>
+`);
+
+tpl('form','Formulaire avec validation','html',['formulaire','validation formulaire','form'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inscription</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#fff;font-family:sans-serif}form{width:300px;display:grid;gap:10px}input,button{padding:12px;border-radius:10px;border:2px solid transparent;font-size:16px}input.bad{border-color:#f87171}small{color:#f87171;min-height:1em}button{background:#22d3ee;border:0;font-weight:700}</style></head><body>
+<form id="f" novalidate><h2>Inscription</h2><input id="mail" type="email" placeholder="Email"><small id="e1"></small><input id="pw" type="password" placeholder="Mot de passe (8+ car.)"><small id="e2"></small><button>Créer mon compte</button><p id="ok"></p></form>
+<script>
+const f=document.getElementById('f');
+function check(inp,err,ok,msg){inp.classList.toggle('bad',!ok);document.getElementById(err).textContent=ok?'':msg;return ok;}
+f.addEventListener('submit',e=>{
+  e.preventDefault();
+  const a=check(f.mail,'e1',/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.mail.value),'Email invalide');
+  const b=check(f.pw,'e2',f.pw.value.length>=8,'8 caractères minimum');
+  document.getElementById('ok').textContent=a&&b?'✅ Formulaire valide !':'';
+});
+[[/S]]</body></html>
+`);
+
+tpl('navbar','Barre de navigation responsive','html',['navbar','barre de navigation','menu responsive','menu burger','menu'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Navbar</title>
+<style>
+body{margin:0;font-family:sans-serif;background:#0b1020;color:#fff}
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#131a2b;position:sticky;top:0}
+nav a{color:#cbd5e1;text-decoration:none;margin-left:18px}nav a:hover{color:#22d3ee}
+#burger{display:none;background:none;border:0;color:#fff;font-size:26px}
+@media(max-width:600px){#burger{display:block}#links{display:none;position:absolute;top:100%;left:0;right:0;background:#131a2b;padding:10px 20px}#links.open{display:grid;gap:12px}#links a{margin:0}}
+</style></head><body>
+<nav><b>MonSite</b><button id="burger" aria-label="Menu">☰</button><div id="links"><a href="#">Accueil</a><a href="#">Projets</a><a href="#">Contact</a></div></nav>
+<script>document.getElementById('burger').onclick=()=>document.getElementById('links').classList.toggle('open');[[/S]]</body></html>
+`);
+
+tpl('flex','Centrer une div (flexbox / grid)','css',['centrer','centrer une div','flexbox centrer','center div'],String.raw`
+/* Méthode 1 : flexbox */
+.parent{
+  display:flex;
+  justify-content:center; /* axe horizontal */
+  align-items:center;     /* axe vertical */
+  min-height:100vh;
+}
+
+/* Méthode 2 : grid (la plus courte) */
+.parent2{
+  display:grid;
+  place-items:center;
+  min-height:100vh;
+}
+`);
+
+tpl('btn','Bouton CSS animé','css',['bouton css','bouton anime','bouton stylise','hover bouton'],String.raw`
+.btn{
+  position:relative;
+  padding:14px 28px;
+  border:0;
+  border-radius:999px;
+  background:linear-gradient(135deg,#22d3ee,#6366f1);
+  color:#06101c;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.btn:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(34,211,238,.35)}
+.btn:active{transform:translateY(0) scale(.97)}
+`);
+
+tpl('grid','Mise en page CSS Grid','css',['grille css','css grid','grid layout','mise en page grid'],String.raw`
+.layout{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  grid-template-rows:60px 1fr 50px;
+  grid-template-areas:
+    "header header"
+    "menu   contenu"
+    "footer footer";
+  gap:12px;
+  min-height:100vh;
+}
+.header{grid-area:header}
+.menu{grid-area:menu}
+.contenu{grid-area:contenu}
+.footer{grid-area:footer}
+
+@media (max-width:700px){
+  .layout{
+    grid-template-columns:1fr;
+    grid-template-areas:"header" "contenu" "menu" "footer";
+  }
+}
+`);
+
+tpl('darkmode','Mode sombre / clair','html',['mode sombre','dark mode','theme sombre','mode clair'],String.raw`
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Thème</title>
+<style>
+:root{--bg:#ffffff;--fg:#111827}
+:root[data-theme="dark"]{--bg:#0b1020;--fg:#e5e7eb}
+body{background:var(--bg);color:var(--fg);font-family:sans-serif;display:grid;place-items:center;min-height:100vh;transition:background .3s,color .3s}
+</style></head><body><div><h1>Thème</h1><button id="t">Changer de thème</button></div>
+<script>
+const root=document.documentElement;
+let th='light';try{th=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(_){}
+root.dataset.theme=th;
+document.getElementById('t').onclick=()=>{th=th==='dark'?'light':'dark';root.dataset.theme=th;try{localStorage.setItem('theme',th);}catch(_){}};
+[[/S]]</body></html>
+`);
+
+tpl('fetch','Appel d’API avec fetch','js',['fetch','appel api','requete http','api fetch','recuperer des donnees'],String.raw`
+async function charger(url){
+  try{
+    const rep = await fetch(url);
+    if(!rep.ok) throw new Error('Erreur HTTP ' + rep.status);
+    const data = await rep.json();
+    console.log(data);
+    return data;
+  }catch(err){
+    console.error('Échec :', err.message);
+  }
+}
+
+charger('https://jsonplaceholder.typicode.com/todos/1');
+
+// POST avec du JSON
+async function envoyer(url, corps){
+  const rep = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(corps)
+  });
+  return rep.json();
+}
+`);
+
+tpl('tri','Tri rapide (quicksort)','js',['tri rapide','quicksort','algorithme de tri','tri'],String.raw`
+function quicksort(arr){
+  if(arr.length <= 1) return arr;
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const gauche = arr.filter(x => x < pivot);
+  const milieu = arr.filter(x => x === pivot);
+  const droite = arr.filter(x => x > pivot);
+  return [...quicksort(gauche), ...milieu, ...quicksort(droite)];
+}
+
+console.log(quicksort([5, 3, 8, 1, 9, 2, 7]));
+// Complexité moyenne : O(n log n)
+`);
+
+tpl('debounce','Debounce (anti-rebond)','js',['debounce','anti rebond','throttle'],String.raw`
+function debounce(fn, delai = 300){
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delai);
+  };
+}
+
+const recherche = debounce(txt => console.log('Recherche :', txt), 400);
+recherche('a'); recherche('ab'); recherche('abc'); // seul "abc" s'exécute
+`);
+
+tpl('classjs','Classe JavaScript','js',['classe js','classe javascript','class javascript','poo javascript'],String.raw`
+class Animal{
+  constructor(nom){ this.nom = nom; }
+  parler(){ return this.nom + ' fait du bruit'; }
+}
+
+class Chien extends Animal{
+  parler(){ return this.nom + ' aboie : Wouf !'; }
+}
+
+const rex = new Chien('Rex');
+console.log(rex.parler());
+console.log(rex instanceof Animal); // true
+`);
+
+tpl('fizz','FizzBuzz','js',['fizzbuzz','fizz buzz'],String.raw`
+for(let i = 1; i <= 30; i++){
+  let s = '';
+  if(i % 3 === 0) s += 'Fizz';
+  if(i % 5 === 0) s += 'Buzz';
+  console.log(s || i);
+}
+`);
+
+tpl('palin','Palindrome','js',['palindrome'],String.raw`
+function estPalindrome(txt){
+  const n = txt.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+  return n === [...n].reverse().join('');
+}
+console.log(estPalindrome('Esope reste ici et se repose')); // true
+console.log(estPalindrome('Bonjour'));                       // false
+`);
+
+tpl('factjs','Factorielle (récursive et itérative)','js',['factorielle','factorial'],String.raw`
+const fact = n => n <= 1 ? 1 : n * fact(n - 1);
+
+function factIter(n){
+  let r = 1;
+  for(let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+console.log(fact(5), factIter(10)); // 120 3628800
+`);
+
+tpl('fibojs','Suite de Fibonacci','js',['fibonacci','suite de fibonacci'],String.raw`
+function fibo(n){
+  const t = [0, 1];
+  for(let i = 2; i < n; i++) t.push(t[i - 1] + t[i - 2]);
+  return t.slice(0, n);
+}
+console.log(fibo(12).join(', '));
+`);
+
+tpl('async','async / await et promesses','js',['async await','promesse','promise','asynchrone'],String.raw`
+const attendre = ms => new Promise(res => setTimeout(res, ms));
+
+async function main(){
+  console.log('Début');
+  await attendre(500);
+  console.log('500 ms plus tard');
+  const [a, b] = await Promise.all([
+    attendre(300).then(() => 'A'),
+    attendre(100).then(() => 'B')
+  ]);
+  console.log('Résultats en parallèle :', a, b);
+}
+main();
+`);
+
+tpl('storage','Sauvegarder avec localStorage','js',['localstorage','sauvegarder donnees','stockage local'],String.raw`
+const sauver = (cle, valeur) => localStorage.setItem(cle, JSON.stringify(valeur));
+const lire = (cle, defaut = null) => {
+  try{ return JSON.parse(localStorage.getItem(cle)) ?? defaut; }
+  catch{ return defaut; }
+};
+
+sauver('profil', { nom: 'Ana', niveau: 3 });
+console.log(lire('profil'));
+`);
+
+tpl('regex','Regex courantes','js',['regex','expression reguliere','regexp'],String.raw`
+const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const tel   = /^(?:\+33|0)[1-9](?:[ .-]?\d{2}){4}$/;
+const hex   = /^#(?:[0-9a-f]{3}){1,2}$/i;
+
+console.log(email.test('a@b.fr'));        // true
+console.log(tel.test('06 12 34 56 78'));  // true
+console.log(hex.test('#22d3ee'));         // true
+console.log('a1b22c333'.match(/\d+/g));   // ['1','22','333']
+`);
+
+tpl('pyfibo','Fibonacci en Python','python',['fibonacci python','python fibonacci'],String.raw`
+def fibonacci(n):
+    a, b = 0, 1
+    resultat = []
+    for _ in range(n):
+        resultat.append(a)
+        a, b = b, a + b
+    return resultat
+
+print(fibonacci(10))
+`);
+
+tpl('pyclass','Classes en Python','python',['classe python','class python','poo python','python classe'],String.raw`
+class Animal:
+    def __init__(self, nom, age):
+        self.nom = nom
+        self.age = age
+
+    def parler(self):
+        return f"{self.nom} fait du bruit"
+
+
+class Chien(Animal):
+    def parler(self):
+        return f"{self.nom} aboie : Wouf !"
+
+
+rex = Chien("Rex", 3)
+print(rex.parler())
+`);
+
+tpl('pyfile','Lire / écrire un fichier en Python','python',['lire un fichier python','fichier python','open file python','python fichier'],String.raw`
+# Écrire
+with open("notes.txt", "w", encoding="utf-8") as f:
+    f.write("Bonjour\nDeuxième ligne\n")
+
+# Lire
+with open("notes.txt", "r", encoding="utf-8") as f:
+    for ligne in f:
+        print(ligne.strip())
+`);
+
+tpl('pysort','Tri rapide en Python','python',['tri python','quicksort python','python tri'],String.raw`
+def quicksort(liste):
+    if len(liste) <= 1:
+        return liste
+    pivot = liste[len(liste) // 2]
+    return (quicksort([x for x in liste if x < pivot])
+            + [x for x in liste if x == pivot]
+            + quicksort([x for x in liste if x > pivot]))
+
+print(quicksort([5, 3, 8, 1, 9, 2, 7]))
+`);
+
+/* ---------- Base de connaissances ---------- */
+const KB=[];
+function kb(q,a,c,l){KB.push({q,a,c,l});}
+kb('variable let const var declarer difference','Une variable est une boîte nommée qui stocke une valeur. En JavaScript : const (ne sera pas réassignée), let (peut changer), var (ancienne façon, à éviter : portée de fonction et hoisting).',`const nom = "Ana";
+let score = 0;
+score = score + 1;`,'js');
+kb('fonction function parametre retour fleche arrow','Une fonction regroupe du code réutilisable : elle reçoit des paramètres et peut renvoyer une valeur avec return. Les fonctions fléchées (=>) sont une écriture courte.',`function addition(a, b){ return a + b; }
+const double = x => x * 2;
+console.log(addition(2, 3), double(4));`,'js');
+kb('boucle for while repeter iteration','Une boucle répète du code. for : nombre de tours connu ; while : tant qu’une condition est vraie ; for...of : parcourir les éléments d’un tableau.',`for(let i = 0; i < 3; i++) console.log(i);
+for(const x of ['a','b']) console.log(x);
+let n = 3; while(n > 0){ n--; }`,'js');
+kb('tableau array liste map filter reduce push foreach','Un tableau est une liste ordonnée. Méthodes clés : push (ajoute), map (transforme), filter (garde certains éléments), reduce (agrège en une valeur), find, includes.',`const n = [1, 2, 3, 4];
+console.log(n.map(x => x * 2));          // [2,4,6,8]
+console.log(n.filter(x => x % 2 === 0)); // [2,4]
+console.log(n.reduce((a, b) => a + b, 0)); // 10`,'js');
+kb('objet object json propriete cle valeur','Un objet regroupe des paires clé/valeur. JSON est le format texte équivalent, très utilisé pour échanger des données (JSON.parse pour lire, JSON.stringify pour écrire).',`const user = { nom: "Ana", age: 20 };
+console.log(user.nom, user["age"]);
+const txt = JSON.stringify(user);
+console.log(JSON.parse(txt));`,'js');
+kb('json parse stringify convertir','JSON.stringify transforme un objet en texte, JSON.parse refait l’inverse. Si le texte est invalide, parse lève une erreur : entoure-le d’un try/catch.',`try{ const o = JSON.parse('{"a":1}'); console.log(o.a); }
+catch(e){ console.error('JSON invalide'); }`,'js');
+kb('condition if else ternaire switch','Une condition exécute du code selon un test. if / else if / else pour plusieurs cas, l’opérateur ternaire (test ? a : b) pour une valeur courte, switch pour beaucoup de valeurs fixes.',`const age = 17;
+if(age >= 18){ console.log('majeur'); } else { console.log('mineur'); }
+console.log(age >= 18 ? 'majeur' : 'mineur');`,'js');
+kb('dom getelementbyid queryselector textcontent element page','Le DOM est la représentation de la page en objets JavaScript. On sélectionne avec querySelector / getElementById, on modifie avec textContent, classList, style, et on crée avec createElement.',`const t = document.querySelector('h1');
+t.textContent = 'Nouveau titre';
+t.classList.add('actif');`,'js');
+kb('evenement addeventlistener click clic ecouteur event','addEventListener branche une fonction sur un événement (click, input, keydown, submit…). Utilise e.preventDefault() pour bloquer le comportement par défaut, par exemple l’envoi d’un formulaire.',`btn.addEventListener('click', e => {
+  console.log('cliqué', e.target);
+});`,'js');
+kb('async await promesse promise asynchrone callback','Une promesse représente un résultat qui arrivera plus tard. await met la fonction async en pause jusqu’à ce que la promesse soit résolue, ce qui rend le code lisible. Toujours gérer les erreurs avec try/catch.',`async function go(){
+  try{ const r = await fetch('/data.json'); console.log(await r.json()); }
+  catch(e){ console.error(e); }
+}`,'js');
+kb('fetch api requete http recuperer donnees','fetch envoie une requête HTTP et renvoie une promesse. Pense à vérifier rep.ok, puis à lire le corps avec rep.json(). Depuis un fichier local ou un autre domaine, CORS peut bloquer la réponse.',`const rep = await fetch(url);
+if(!rep.ok) throw new Error(rep.status);
+const data = await rep.json();`,'js');
+kb('closure fermeture portee scope','Une closure est une fonction qui garde l’accès aux variables de l’endroit où elle a été créée, même après la fin de la fonction parente. Pratique pour des compteurs, du cache, des variables privées.',`function compteur(){
+  let n = 0;
+  return () => ++n;
+}
+const c = compteur();
+console.log(c(), c(), c()); // 1 2 3`,'js');
+kb('this contexte bind call apply','this désigne l’objet « courant », mais sa valeur dépend de la façon dont la fonction est appelée. Les fonctions fléchées gardent le this de leur contexte ; bind/call/apply permettent de le fixer.',`const o = { n: 'Ana', dire(){ return this.n; } };
+console.log(o.dire());`,'js');
+kb('classe class extends heritage poo objet constructeur','Une classe est un plan pour créer des objets. constructor initialise, extends permet l’héritage, super() appelle le parent. POO : encapsulation, héritage, polymorphisme.',`class A{ constructor(n){ this.n = n; } }
+class B extends A{ salut(){ return 'Salut ' + this.n; } }
+console.log(new B('Ana').salut());`,'js');
+kb('recursion recursivite fonction qui s appelle','Une fonction récursive s’appelle elle-même. Il faut toujours un cas d’arrêt, sinon elle déborde de la pile (Maximum call stack size exceeded).',`function somme(n){ return n === 0 ? 0 : n + somme(n - 1); }
+console.log(somme(4)); // 10`,'js');
+kb('complexite big o notation temps algorithme performance','La notation Big O décrit comment le temps grandit avec la taille n : O(1) constant, O(log n) recherche dichotomique, O(n) un parcours, O(n log n) bons tris, O(n²) deux boucles imbriquées, O(2ⁿ) explosif.');
+kb('flexbox flex justify align centrer','Flexbox aligne des éléments sur un axe. Sur le conteneur : display:flex, flex-direction, justify-content (axe principal), align-items (axe secondaire), gap. Sur l’enfant : flex:1 pour partager l’espace.',`.row{ display:flex; gap:12px; justify-content:space-between; align-items:center; }`,'css');
+kb('grid css grille colonnes template','CSS Grid gère des mises en page en 2 dimensions. grid-template-columns définit les colonnes ; repeat(auto-fit, minmax(200px, 1fr)) crée une grille responsive sans media query.',`.grille{ display:grid; gap:16px;
+  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); }`,'css');
+kb('media query responsive mobile adaptatif breakpoint','Les media queries adaptent le style à la taille d’écran. Approche « mobile first » : style de base pour téléphone, puis min-width pour agrandir. N’oublie pas la balise meta viewport.',`@media (min-width: 700px){
+  .carte{ width:50%; }
+}`,'css');
+kb('position absolute relative fixed sticky z-index','position:relative garde l’élément dans le flux ; absolute le place par rapport au plus proche ancêtre positionné ; fixed par rapport à l’écran ; sticky colle au défilement. z-index ordonne les couches (sur éléments positionnés).',`.parent{ position:relative; }
+.badge{ position:absolute; top:8px; right:8px; z-index:2; }`,'css');
+kb('variable css custom property root var','Les variables CSS se déclarent avec -- et se lisent avec var(). Elles facilitent les thèmes (clair/sombre) et se changent en JavaScript.',`:root{ --accent:#22d3ee; }
+.btn{ background:var(--accent); }`,'css');
+kb('animation keyframes transition css anime','transition anime un changement d’état (hover), @keyframes décrit une animation complète. Préfère animer transform et opacity : c’est fluide car géré par le GPU.',`@keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.1); } }
+.logo{ animation:pulse 2s infinite; }`,'css');
+kb('git commande init add commit push pull branch','Git versionne ton code. Cycle de base : git add (préparer) → git commit (enregistrer) → git push (envoyer). git pull récupère, git branch / git switch gèrent les branches, git status et git log informent.',`git init
+git add .
+git commit -m "premier commit"
+git branch -M main
+git remote add origin URL
+git push -u origin main`,'bash');
+kb('git merge rebase difference fusion','merge fusionne deux branches en créant un commit de fusion (historique fidèle). rebase rejoue tes commits au-dessus d’une autre branche (historique linéaire) : ne jamais rebaser des commits déjà partagés.');
+kb('code http statut 200 301 404 500 erreur serveur','200 OK, 201 créé, 301/302 redirection, 400 requête invalide, 401 non authentifié, 403 interdit, 404 introuvable, 429 trop de requêtes, 500 erreur serveur, 503 service indisponible.');
+kb('rest api verbes get post put delete endpoint','Une API REST expose des ressources via des URL et des verbes HTTP : GET lit, POST crée, PUT/PATCH modifie, DELETE supprime. Les réponses sont en général en JSON avec un code de statut.');
+kb('sql select join requete base de donnees where','SQL interroge une base de données. SELECT choisit des colonnes, WHERE filtre, JOIN relie des tables, GROUP BY regroupe, ORDER BY trie.',`SELECT u.nom, COUNT(c.id) AS commandes
+FROM users u
+JOIN commandes c ON c.user_id = u.id
+WHERE u.actif = 1
+GROUP BY u.nom
+ORDER BY commandes DESC;`,'sql');
+kb('python liste comprehension boucle','Une compréhension de liste construit une liste en une ligne.',`carres = [x * x for x in range(10) if x % 2 == 0]
+print(carres)`,'python');
+kb('python dictionnaire dict cle valeur','Un dictionnaire Python associe des clés à des valeurs.',`age = {"Ana": 20, "Leo": 22}
+age["Zoe"] = 19
+for nom, a in age.items():
+    print(nom, a)`,'python');
+kb('python installer pip module bibliotheque venv','pip installe des bibliothèques Python. Isole chaque projet dans un environnement virtuel : python -m venv venv puis active-le avant pip install.',`python -m venv venv
+source venv/bin/activate   # Windows : venv\\Scripts\\activate
+pip install requests`,'bash');
+kb('regex expression reguliere motif','Une regex décrit un motif de texte : \\d chiffre, \\w lettre, + un ou plusieurs, * zéro ou plus, ^ début, $ fin, [] ensemble de caractères, () groupe.',`console.log(/^\\d{4}-\\d{2}-\\d{2}$/.test('2026-11-02')); // true`,'js');
+kb('localstorage sessionstorage stockage navigateur cookie','localStorage garde des textes dans le navigateur sans expiration (≈5 Mo), sessionStorage jusqu’à la fermeture de l’onglet. Ne stocke jamais de mots de passe ni de données sensibles dedans.');
+kb('canvas animation requestanimationframe jeu boucle de jeu','Pour une animation ou un jeu : une boucle avec requestAnimationFrame qui met à jour l’état puis redessine le canvas à chaque image (≈60 fps).',`function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();`,'js');
+kb('apk android appli html convertir application mobile pwa capacitor webview','Pour transformer ton HTML en appli Android : 1) PWA : manifest.json + service worker, puis « Ajouter à l’écran d’accueil » ; 2) Capacitor ou Cordova : emballent ton site dans une WebView et produisent un APK ; 3) PWABuilder génère un APK depuis une PWA ; 4) Android Studio avec un WebView qui charge ton fichier HTML en assets.');
+kb('pwa manifest service worker hors ligne installer','Une PWA est un site installable et utilisable hors ligne. Il faut un fichier manifest.json (nom, icônes, couleurs, display:standalone), un service worker qui met les fichiers en cache, et un hébergement HTTPS.');
+kb('debug deboguer bug erreur console devtools trouver','Méthode de débogage : 1) lis le message d’erreur et la ligne indiquée ; 2) ouvre la console (F12) ; 3) place des console.log ou le mot-clé debugger ; 4) isole le problème avec le plus petit code possible ; 5) change une seule chose à la fois.');
+kb('null undefined difference vide','undefined = « pas de valeur assignée » (variable non initialisée, propriété absente). null = « vide volontaire ». L’opérateur ?? donne une valeur par défaut pour les deux, et ?. évite les erreurs sur les propriétés absentes.',`const u = {};
+console.log(u.adresse?.ville ?? 'inconnue');`,'js');
+kb('egal triple == === difference comparaison','== convertit les types avant de comparer (0 == "0" est vrai), === compare valeur ET type (0 === "0" est faux). Utilise toujours ===.');
+kb('propagation bubbling delegation evenement capture','Un événement remonte du clic jusqu’aux parents (bubbling). La délégation : un seul écouteur sur le parent qui lit e.target, très utile pour des listes dynamiques.',`liste.addEventListener('click', e => {
+  if(e.target.matches('li')) console.log(e.target.textContent);
+});`,'js');
+kb('destructuration spread rest operateur','La déstructuration extrait des valeurs, spread (...) étale un tableau/objet, rest (...) regroupe le reste.',`const [a, b] = [1, 2];
+const { nom, age } = { nom: 'Ana', age: 20 };
+const copie = { ...{ x: 1 }, y: 2 };`,'js');
+kb('module import export fichier separer','Les modules découpent le code en fichiers : export pour partager, import pour utiliser. En HTML : <script type="module" src="app.js">. Les modules ne marchent pas en file:// dans certains navigateurs, utilise un petit serveur local.',`export const PI2 = Math.PI * 2;
+// autre fichier
+import { PI2 } from './maths.js';`,'js');
+kb('serveur local localhost http server tester','Pour tester en local avec un vrai serveur : python -m http.server 8000 puis ouvre http://localhost:8000, ou npx serve avec Node.',`python -m http.server 8000`,'bash');
+kb('node npm package installer javascript serveur','Node.js exécute JavaScript hors du navigateur. npm installe des paquets : npm init -y, npm install nom, puis node fichier.js.',`npm init -y
+npm install express
+node serveur.js`,'bash');
+kb('typescript ts types difference javascript','TypeScript = JavaScript + types vérifiés avant exécution. Il détecte beaucoup de bugs dès l’éditeur, puis se compile en JavaScript.',`function saluer(nom: string): string{ return 'Salut ' + nom; }`,'ts');
+kb('react vue framework angular choisir','Un framework structure une interface en composants. React (écosystème énorme), Vue (doux à apprendre), Svelte (léger). Apprends d’abord JavaScript pur : tout le reste en découle.');
+kb('securite xss injection sql faille proteger','Deux failles classiques : XSS (du code injecté dans la page : utilise textContent plutôt que innerHTML avec des données externes) et injection SQL (utilise des requêtes paramétrées, jamais de concaténation). Ne mets jamais de clé secrète dans du code côté navigateur.');
+kb('set map structure donnees js collection','Set stocke des valeurs uniques, Map associe clés (de tout type) et valeurs en gardant l’ordre.',`const s = new Set([1, 1, 2]);   // {1, 2}
+const m = new Map([['a', 1]]);
+console.log(s.size, m.get('a'));`,'js');
+kb('sort trier tableau nombre piege','Array.sort trie par défaut en texte : [10, 2, 1].sort() donne [1, 10, 2]. Pour des nombres, fournis une fonction de comparaison.',`[10, 2, 1].sort((a, b) => a - b); // [1, 2, 10]`,'js');
+kb('date heure time javascript formater','L’objet Date gère les dates. toLocaleDateString formate selon la langue ; les mois commencent à 0 (janvier = 0).',`const d = new Date();
+console.log(d.toLocaleDateString('fr-FR'), d.getMonth());`,'js');
+kb('binaire bit octet hexadecimal base','Le binaire est la base 2 (0 et 1) : un bit est un chiffre binaire, 8 bits font un octet. L’hexadécimal (base 16, 0-9 puis A-F) est un raccourci : 1 chiffre hexa = 4 bits. Essaie « 255 en binaire » ou « 255 en hexa » avec moi !');
+kb('tri bulles insertion fusion algorithmes comparer','Tri à bulles / insertion : simples mais O(n²). Tri fusion / rapide : O(n log n), pour de grandes listes. En pratique, utilise le tri natif du langage (sort), très optimisé.');
+kb('poo encapsulation heritage polymorphisme principes','Les 3 piliers de la POO : encapsulation (cacher les détails internes), héritage (réutiliser une classe parente), polymorphisme (même méthode, comportements différents selon l’objet).');
+kb('reseau neurones machine learning intelligence artificielle fonctionne apprentissage','Un réseau de neurones est un empilement de fonctions mathématiques dont les poids sont ajustés pendant l’entraînement pour réduire une erreur. Un grand modèle de langage prédit le mot suivant avec des milliards de poids. NKVA est bien plus modeste : il compare des mots et mémorise ce que tu lui apprends.');
+kb('vitesse lumiere physique celerite','La lumière voyage à environ 299 792 km/s dans le vide, soit près de 300 000 km/s.');
+kb('pi nombre cercle constante mathematique','π (pi) ≈ 3,14159. C’est le rapport entre la circonférence d’un cercle et son diamètre.');
+kb('nombre premier definition','Un nombre premier n’a que deux diviseurs : 1 et lui-même (2, 3, 5, 7, 11…). 2 est le seul premier pair.');
+kb('planetes systeme solaire combien','Le système solaire compte 8 planètes : Mercure, Vénus, Terre, Mars, Jupiter, Saturne, Uranus, Neptune.');
+kb('internet wifi difference web','Internet est le réseau mondial de machines connectées ; le Web (pages, liens, navigateurs) n’est qu’un service qui tourne dessus. Le Wi-Fi est juste un moyen sans fil de se connecter au réseau local.');
+kb('adn genetique cellule','L’ADN est la molécule qui porte l’information génétique, sous forme d’une double hélice faite de 4 bases (A, T, C, G).');
+kb('eau ebullition temperature degres','L’eau bout à 100 °C et gèle à 0 °C à pression atmosphérique normale.');
+kb('gravite terre acceleration','À la surface de la Terre, la gravité vaut environ 9,81 m/s².');
+
+const df={};
+KB.forEach(e=>{e.t=[...new Set(keyTokens(e.q))];e.t.forEach(t=>df[t]=(df[t]||0)+1);});
+const idf=t=>Math.log(1+KB.length/(1+(df[t]||0)));
+function kbLookup(text){
+  const qt=[...new Set(keyTokens(text))];if(!qt.length)return null;
+  let tot=0;qt.forEach(t=>tot+=idf(t));
+  let best=null,bm=0,bs=0;
+  for(const e of KB){
+    let m=0;
+    for(const t of qt){let s=0;for(const u of e.t)s=Math.max(s,sameWord(t,u));m+=idf(t)*s;}
+    const sc=m/tot;
+    if(m>bm&&sc>=.5||(sc>bs&&sc>=.5&&m>=bm*.9)){if(sc>=bs){bs=sc;bm=Math.max(bm,m);best=e;}}
+  }
+  return best&&bs>=.5&&bm>=1.2?best:null;
+}
+
+/* ---------- Capitales ---------- */
+const CAPITALES={france:'Paris',espagne:'Madrid',italie:'Rome',allemagne:'Berlin',portugal:'Lisbonne',belgique:'Bruxelles',suisse:'Berne','royaume uni':'Londres',angleterre:'Londres',irlande:'Dublin','pays bas':'Amsterdam',autriche:'Vienne',grece:'Athènes',pologne:'Varsovie',suede:'Stockholm',norvege:'Oslo',danemark:'Copenhague',finlande:'Helsinki',russie:'Moscou',ukraine:'Kiev',turquie:'Ankara',maroc:'Rabat',algerie:'Alger',tunisie:'Tunis',egypte:'Le Caire',senegal:'Dakar','cote d ivoire':'Yamoussoukro',cameroun:'Yaoundé',nigeria:'Abuja','afrique du sud':'Pretoria (capitale administrative)','etats unis':'Washington D.C.',usa:'Washington D.C.',canada:'Ottawa',mexique:'Mexico',bresil:'Brasilia',argentine:'Buenos Aires',chili:'Santiago',perou:'Lima',colombie:'Bogota',japon:'Tokyo',chine:'Pékin',inde:'New Delhi','coree du sud':'Séoul',thailande:'Bangkok',vietnam:'Hanoï',indonesie:'Jakarta',australie:'Canberra','nouvelle zelande':'Wellington','arabie saoudite':'Riyad',iran:'Téhéran',israel:'Jérusalem'};
+
+/* ---------- Erreurs courantes ---------- */
+const ERRS=[
+  [/(\w[\w.$]*) is not defined/,m=>'« '+m[1]+' » n’existe pas à cet endroit : faute de frappe, oubli de déclaration (let/const), variable déclarée dans un autre bloc, ou script chargé avant l’élément/la fonction. Vérifie l’orthographe (JavaScript distingue majuscules et minuscules).'],
+  [/cannot read propert(?:y|ies) of (undefined|null)(?: \(reading '([^']+)'\))?/,m=>'Tu essaies de lire '+(m[2]?'« .'+m[2]+' »':'une propriété')+' sur une valeur '+m[1]+'. Souvent : getElementById/querySelector n’a rien trouvé (mauvais id, script exécuté avant le HTML), une donnée pas encore chargée, ou un tableau vide. Corrige avec une vérification (if(x)) ou l’opérateur ?. (x?.prop).'],
+  [/cannot set propert(?:y|ies) of (undefined|null)/,m=>'Tu écris dans une propriété d’une valeur '+m[1]+' : l’élément ciblé n’existe pas (id faux ? script placé avant le HTML ?). Mets ton <script> à la fin du body ou utilise defer.'],
+  [/([\w.$]+) is not a function/,m=>'« '+m[1]+' » n’est pas une fonction : nom mal écrit, mauvaise méthode pour ce type (ex. .map sur un objet), parenthèses en trop, ou la valeur écrase la fonction. Affiche-la avec console.log(typeof '+m[1]+').'],
+  [/assignment to constant variable/,()=>'Tu réassignes une variable déclarée avec const. Utilise let si la valeur doit changer (un objet/tableau const peut en revanche être modifié en interne).'],
+  [/cannot access '(\w+)' before initialization/,m=>'Tu utilises « '+m[1]+' » avant sa déclaration let/const (zone morte temporelle). Déplace la déclaration plus haut.'],
+  [/unexpected token|invalid or unexpected token/,()=>'Erreur de syntaxe : un caractère est à une place impossible. Cherche une virgule, parenthèse, accolade ou guillemet manquant/en trop juste avant la ligne indiquée. Colle ton code dans l’onglet Code et clique « Analyser » : je repère les symboles non fermés.'],
+  [/unexpected end of (?:input|json data)|unterminated/,()=>'Le code ou le JSON s’arrête trop tôt : il manque une accolade/parenthèse/guillemet de fermeture, ou le JSON reçu est vide ou tronqué.'],
+  [/maximum call stack/,()=>'Récursion infinie : une fonction s’appelle sans cesse. Ajoute un cas d’arrêt, ou vérifie qu’un setter/événement ne se redéclenche pas lui-même.'],
+  [/cors|cross-origin/,()=>'CORS : le navigateur bloque une requête vers un autre domaine car le serveur n’autorise pas ton origine. Solutions : activer les en-têtes Access-Control-Allow-Origin côté serveur, passer par un proxy/serveur à toi, ou tester depuis un vrai serveur local plutôt que file://.'],
+  [/failed to fetch|networkerror|net::err/,()=>'La requête réseau a échoué : pas de connexion, URL fausse, serveur éteint, blocage CORS ou contenu mixte http/https. Ouvre l’onglet Réseau (F12) pour voir la vraie cause.'],
+  [/indentationerror/,()=>'Python exige une indentation cohérente : 4 espaces par niveau, jamais de mélange tabulations/espaces, et un bloc indenté après chaque « : ».'],
+  [/nameerror: name '(\w+)'/,m=>'Python ne connaît pas « '+m[1]+' » : faute de frappe, oubli d’import, ou variable créée plus bas dans le fichier.'],
+  [/modulenotfounderror.*'([\w.]+)'/,m=>'Le module « '+m[1]+' » n’est pas installé : pip install '+m[1].split('.')[0]+' (dans le bon environnement virtuel).'],
+  [/syntaxerror: invalid syntax/,()=>'Syntaxe Python invalide : « : » oublié après if/for/def, parenthèse non fermée à la ligne d’avant, ou mot réservé utilisé comme nom.'],
+  [/typeerror: unsupported operand/,()=>'Tu mélanges des types incompatibles (ex. "5" + 3 : texte + nombre). Convertis avec int(), float() ou str().'],
+  [/keyerror/,()=>'La clé n’existe pas dans le dictionnaire. Utilise dico.get(cle, défaut) ou teste avec « if cle in dico ».'],
+  [/indexerror|list index out of range/,()=>'Tu accèdes à une case qui n’existe pas : les indices vont de 0 à len(liste)-1. Vérifie que la liste n’est pas vide.'],
+  [/zerodivisionerror|division by zero/,()=>'Division par zéro : teste le diviseur avant de diviser.'],
+  [/uncaught \(in promise\)|unhandledrejection/,()=>'Une promesse a échoué sans être rattrapée : ajoute .catch(...) ou un try/catch autour de ton await.'],
+  [/\b404\b/,()=>'404 = ressource introuvable : mauvaise URL, fichier absent ou mal nommé (attention aux majuscules et aux chemins relatifs).']
+];
+</script>
+<!-- ============ LOGIQUE ============ -->
+<script id="logic">
+const $=id=>document.getElementById(id);
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- Mémoire ---------- */
+const store={get(k,d){try{const v=localStorage.getItem('nkva_'+k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem('nkva_'+k,JSON.stringify(v));}catch(e){}}};
+let mem={name:store.get('name',null),learned:store.get('learned',[]),facts:store.get('facts',[])};
+const saveMem=()=>{store.set('name',mem.name);store.set('learned',mem.learned);store.set('facts',mem.facts);};
+let lastImage=null,lastRaw='',activeConsole=null;
+
+/* ---------- Onglets ---------- */
+const TABS=[['chat','💬','Chat'],['ia','🤖','Vraie IA'],['code','💻','Code'],['photo','🖼️','Photo'],['mem','🧠','Mémoire'],['info','ℹ️','Infos']];
+(function(){
+  const rail=$('rail');
+  rail.innerHTML='<div class="brand"><div class="logo">N</div><div><b>NKVA</b><small>v2 · local</small></div></div>';
+  TABS.forEach(([id,ic,lb])=>{const b=document.createElement('button');b.className='tab'+(id==='chat'?' on':'');b.dataset.t=id;b.title=lb;b.innerHTML='<span class="ic">'+ic+'</span><span class="lbl">'+lb+'</span>';b.onclick=()=>showTab(id);rail.appendChild(b);});
+})();
+function showTab(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===id));
+  if(id==='mem')renderMem();
+}
+
+/* ---------- Petites fonctions utiles ---------- */
+function copyText(txt,btn){
+  const done=()=>{if(btn){const o=btn.textContent;btn.textContent='Copié ✔';setTimeout(()=>btn.textContent=o,1200);}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,()=>fallback());}else fallback();
+  function fallback(){const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');}catch(e){}t.remove();done();}
+}
+const fmtSize=b=>b>1048576?(b/1048576).toFixed(1).replace('.',',')+' Mo':Math.max(1,Math.round(b/1024))+' Ko';
+const hx=(r,g,b)=>'#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+const lumaOf=(r,g,b)=>.299*r+.587*g+.114*b;
+const satOf=(r,g,b)=>{const mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mx?(mx-mn)/mx:0;};
+
+/* ---------- Rendu des messages ---------- */
+function codeBlock(lang,src){
+  const w=document.createElement('div');w.className='cb';
+  const h=document.createElement('div');h.className='cbh';
+  const l=document.createElement('span');l.textContent=lang;h.appendChild(l);
+  const mk=(txt,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;b.onclick=fn;h.appendChild(b);};
+  mk('Copier',e=>copyText(src,e.target));
+  if(['html','js','css'].includes(lang))mk('▶ Exécuter',()=>openRun(lang,src));
+  mk('Éditeur',()=>openInEditor(src,lang));
+  const pre=document.createElement('pre');pre.textContent=src;
+  w.append(h,pre);return w;
+}
+function swatches(colors){
+  const d=document.createElement('div');d.className='swatches';
+  colors.forEach(c=>{const s=document.createElement('div');s.className='sw';s.style.background=c.hex;s.style.color=lumaOf(...c.rgb)>140?'#111':'#fff';s.textContent=c.hex+' · '+c.pct+'%';s.title='Cliquer pour copier';s.onclick=()=>copyText(c.hex);d.appendChild(s);});
+  return d;
+}
+function renderParts(parts,el){
+  parts.forEach(p=>{
+    if(p.t==='text'){const s=document.createElement('div');s.textContent=p.v;el.appendChild(s);}
+    else if(p.t==='code')el.appendChild(codeBlock(p.lang,p.v));
+    else if(p.t==='img'){const im=new Image();im.src=p.src;im.className='thumb';el.appendChild(im);}
+    else if(p.t==='swatches')el.appendChild(swatches(p.colors));
+    else if(p.t==='actions'){const d=document.createElement('div');d.className='acts';p.list.forEach(a=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=a.label;b.onclick=()=>{if(a.fn)a.fn();else send(a.cmd);};d.appendChild(b);});el.appendChild(d);}
+  });
+}
+const chat=$('chat');
+const scrollDown=()=>{chat.scrollTop=chat.scrollHeight;};
+function addMe(content){
+  const d=document.createElement('div');d.className='msg me';
+  renderParts(typeof content==='string'?[{t:'text',v:content}]:content,d);
+  chat.appendChild(d);scrollDown();
+}
+function botSay(content){
+  const parts=typeof content==='string'?[{t:'text',v:content}]:content;
+  const len=parts.reduce((a,p)=>a+(p.t==='text'?p.v.length:60),0);
+  const t=document.createElement('div');t.className='msg bot typing';t.innerHTML='<i></i><i></i><i></i>';
+  chat.appendChild(t);scrollDown();
+  setTimeout(()=>{t.remove();const m=document.createElement('div');m.className='msg bot';renderParts(parts,m);chat.appendChild(m);scrollDown();},Math.min(200+len*3,900));
+}
+
+/* ---------- Exécution (bac à sable) ---------- */
+const HOOKJS="(function(){function s(t,a){parent.postMessage({nkva:1,t:t,m:Array.prototype.map.call(a,function(x){try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')},'*')}['log','warn','error','info'].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});window.onerror=function(m,u,l){s('error',[m+' (ligne '+l+')'])};window.addEventListener('unhandledrejection',function(e){s('error',['Promesse rejetée : '+e.reason])})})();";
+const HOOK='<script>'+HOOKJS+SCL;
+function buildRunDoc(lang,src){
+  if(lang==='html'){return /<head[^>]*>/i.test(src)?src.replace(/<head[^>]*>/i,m=>m+HOOK):HOOK+src;}
+  if(lang==='css')return '<!DOCTYPE html><html><head><meta charset="utf-8">'+HOOK+'<style>body{font-family:sans-serif;padding:16px}'+src+'</style></head><body><h1>Titre h1</h1><h2>Titre h2</h2><p>Un paragraphe avec un <a href="#">lien</a> et du <b>gras</b>.</p><button>Bouton</button> <input placeholder="champ"><ul><li>Un</li><li>Deux</li></ul><div class="parent"><div class="enfant">div</div></div></body></html>';
+  return '<!DOCTYPE html><html><head><meta charset="utf-8">'+HOOK+'</head><body style="font-family:sans-serif;padding:12px"><div id="app"></div><script>'+src+'\n'+SCL+'</body></html>';
+}
+function runInto(box,lang,src){
+  box.innerHTML='';
+  const f=document.createElement('iframe');f.className='runframe';f.setAttribute('sandbox','allow-scripts allow-modals allow-forms');
+  const con=document.createElement('div');con.className='con';con.textContent='';
+  box.append(f,con);activeConsole=con;
+  f.srcdoc=buildRunDoc(lang,src);
+}
+window.addEventListener('message',e=>{
+  const d=e.data;if(!d||!d.nkva||!activeConsole)return;
+  const div=document.createElement('div');div.className='cl '+d.t;div.textContent=(d.t==='error'?'✖ ':d.t==='warn'?'⚠ ':'› ')+d.m;
+  activeConsole.appendChild(div);activeConsole.scrollTop=activeConsole.scrollHeight;
+});
+function openRun(lang,src){$('modal').classList.add('on');runInto($('mbody'),lang,src);}
+$('mclose').onclick=()=>{$('modal').classList.remove('on');$('mbody').innerHTML='';};
+
+/* ---------- Analyse de code ---------- */
+function balance(src,lang){
+  const stack=[],out=[],pairs={')':'(',']':'[','}':'{'};let line=1,i=0,n=src.length,str=null;
+  while(i<n){
+    const c=src[i],d=src[i+1];
+    if(c==='\n'){line++;if(str==="'"||str==='"')str=null;i++;continue;}
+    if(str){if(c==='\\'){i+=2;continue;}if(c===str)str=null;i++;continue;}
+    if(lang==='js'&&c==='/'&&d==='/'&&src[i-1]!==':'){while(i<n&&src[i]!=='\n')i++;continue;}
+    if(lang!=='python'&&c==='/'&&d==='*'){const e=src.indexOf('*/',i+2),chunk=e<0?src.slice(i):src.slice(i,e);line+=(chunk.match(/\n/g)||[]).length;i=e<0?n:e+2;continue;}
+    if(lang==='python'&&c==='#'){while(i<n&&src[i]!=='\n')i++;continue;}
+    if(c==='"'||c==="'"||(c==='`'&&lang==='js')){str=c;i++;continue;}
+    if('([{'.includes(c))stack.push({c,line});
+    else if(')]}'.includes(c)){const top=stack.pop();if(!top)out.push({line,msg:'« '+c+' » fermant sans ouvrant correspondant'});else if(top.c!==pairs[c])out.push({line,msg:'« '+c+' » ne correspond pas à « '+top.c+' » ouvert ligne '+top.line});}
+    i++;
+  }
+  stack.forEach(s=>out.push({line:s.line,msg:'« '+s.c+' » jamais fermé'}));
+  return out;
+}
+function detectLang(s){
+  const t=s.trim();
+  if(/^[\[{]/.test(t)){try{JSON.parse(t);return 'json';}catch(e){}}
+  if(/^<!doctype html|^<html|<\/?(div|body|head|p|span|h1|h2|script|style|section|main|button|ul|form|canvas)\b/i.test(t))return 'html';
+  if(/^\s*(def |class \w+(\(.*\))?:|import \w+$|from \w+ import|print\()/m.test(s)&&!/[;{}]\s*$/m.test(s))return 'python';
+  if(/^\s*(select|insert|update|delete|create table)\b/i.test(t))return 'sql';
+  if(/[.#]?[\w-]+\s*\{[^}]*:[^}]*\}/.test(s)&&!/\b(function|const|let|var)\b|=>/.test(s))return 'css';
+  return 'js';
+}
+function lintJS(src,off=0){
+  const it=[],add=(lvl,line,msg)=>it.push({lvl,line:line?line+off:0,msg});
+  const hasMod=/^\s*(import|export)\s/m.test(src);
+  if(!hasMod){
+    try{new Function(src);}
+    catch(e){
+      let ok=false;
+      if(/await/.test(e.message)){try{new Function('return (async()=>{'+src+'\n})');ok=true;}catch(_){}}
+      if(!ok)add('err',0,'Erreur de syntaxe : '+e.message);
+    }
+  }
+  balance(src,'js').forEach(b=>add('err',b.line,b.msg));
+  const lines=src.split('\n');let depth=0,loops=[],maxLoop=0;
+  const hasClear=/clearInterval/.test(src);
+  lines.forEach((raw,i)=>{
+    const ln=i+1,t=raw.trim();if(!t||t.startsWith('//')||t.startsWith('*'))return;
+    const code=t.replace(/(["'`])(?:\\.|(?!\1).)*\1/g,'""').replace(/\/\/.*$/,'');
+    if(/[^=!<>]==[^=]/.test(code)&&!/=>/.test(code.replace(/==/g,'')))add('warn',ln,'« == » compare en convertissant les types : préfère « === »');
+    if(/\bvar\s+\w/.test(code))add('info',ln,'« var » : préfère let / const');
+    if(/\bconsole\.log\(/.test(code))add('info',ln,'console.log présent (pense à l’enlever en production)');
+    if(/\beval\s*\(/.test(code))add('err',ln,'eval() est dangereux et lent : à éviter');
+    if(/\.innerHTML\s*\+?=/.test(code))add('warn',ln,'innerHTML : risque XSS avec des données externes, préfère textContent');
+    if(/document\.write\(/.test(code))add('warn',ln,'document.write est obsolète et bloquant');
+    if(/catch\s*(\([^)]*\))?\s*\{\s*\}/.test(code))add('warn',ln,'catch vide : l’erreur disparaît silencieusement');
+    if(/\bif\s*\(([^()]*[^=!<>])=([^=>][^()]*)\)/.test(code))add('warn',ln,'Affectation « = » dans une condition : tu voulais peut-être « === » ?');
+    if(/setInterval\(/.test(code)&&!hasClear)add('info',ln,'setInterval sans clearInterval : l’intervalle ne s’arrêtera jamais');
+    if(raw.length>180)add('info',ln,'Ligne très longue ('+raw.length+' car.) : coupe-la pour la lisibilité');
+    if(/\b(TODO|FIXME)\b/.test(raw))add('info',ln,'TODO / FIXME à traiter');
+    const isLoop=/\b(for|while)\s*\(/.test(code);
+    const o=(code.match(/{/g)||[]).length,c=(code.match(/}/g)||[]).length;
+    if(isLoop&&o>0)loops.push(depth);
+    depth+=o-c;if(depth<0)depth=0;
+    while(loops.length&&loops[loops.length-1]>=depth&&c>0&&!isLoop)loops.pop();
+    maxLoop=Math.max(maxLoop,loops.length);
+  });
+  if(maxLoop>=2)add('info',0,'Boucles imbriquées sur '+maxLoop+' niveaux : complexité ≈ O(n^'+maxLoop+'), attention aux grosses données');
+  return it;
+}
+function lintHTML(src){
+  const it=[],add=(lvl,line,msg)=>it.push({lvl,line,msg});
+  const lineAt=i=>src.slice(0,i).split('\n').length;
+  let clean=src.replace(CMT,m=>m.replace(/[^\n]/g,' '));
+  clean=clean.replace(/(<(script|style)\b[^>]*>)([\s\S]*?)(<\/\2>)/gi,(m,a,b,c,d)=>a+c.replace(/[^\n]/g,' ')+d);
+  const VOID=new Set('area base br col embed hr img input link meta param source track wbr'.split(' '));
+  const OPT=new Set('p li td th tr dt dd option thead tbody tfoot'.split(' '));
+  const st=[],re=/<(\/?)([a-zA-Z][\w:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;let m;
+  while((m=re.exec(clean))){
+    const close=m[1]==='/',name=m[2].toLowerCase(),selfc=/\/\s*$/.test(m[3]);
+    if(!close){if(!VOID.has(name)&&!selfc)st.push({name,line:lineAt(m.index)});}
+    else{
+      if(VOID.has(name)){add('warn',lineAt(m.index),'</'+name+'> inutile : cette balise n’a pas de fermeture');continue;}
+      let k=st.length-1;while(k>=0&&st[k].name!==name)k--;
+      if(k<0)add('err',lineAt(m.index),'Balise fermante </'+name+'> sans balise ouvrante');
+      else{for(let j=st.length-1;j>k;j--)if(!OPT.has(st[j].name))add('err',st[j].line,'<'+st[j].name+'> jamais fermé (avant </'+name+'>)');st.length=k;}
+    }
+  }
+  st.forEach(s=>{if(!OPT.has(s.name))add('err',s.line,'<'+s.name+'> jamais fermé');});
+  if(!/<!doctype html/i.test(src))add('warn',1,'Il manque <!DOCTYPE html> (le navigateur passe en mode quirks)');
+  if(/<html/i.test(src)&&!/<html[^>]*\blang=/i.test(src))add('info',0,'Ajoute lang="fr" sur <html> (accessibilité, SEO)');
+  if(/<head/i.test(src)&&!/<meta[^>]*charset/i.test(src))add('warn',0,'Il manque <meta charset="UTF-8"> (accents cassés possibles)');
+  if(/<head/i.test(src)&&!/<meta[^>]*viewport/i.test(src))add('warn',0,'Il manque <meta name="viewport"> : le rendu sera mauvais sur téléphone');
+  if(/<head/i.test(src)&&!/<title/i.test(src))add('info',0,'Il manque une balise <title>');
+  const imgRe=/<img\b(?![^>]*\balt=)[^>]*>/gi;while((m=imgRe.exec(src)))add('warn',lineAt(m.index),'<img> sans attribut alt');
+  const blank=/<a\b(?=[^>]*target=["']?_blank)(?![^>]*rel=)[^>]*>/gi;while((m=blank.exec(src)))add('info',lineAt(m.index),'target="_blank" sans rel="noopener"');
+  const ids={},idRe=/\bid=["']([^"']+)["']/g;while((m=idRe.exec(clean))){(ids[m[1]]=ids[m[1]]||[]).push(lineAt(m.index));}
+  Object.keys(ids).forEach(k=>{if(ids[k].length>1)add('err',ids[k][1],'id="'+k+'" en double (lignes '+ids[k].join(', ')+')');});
+  const obs=/<\/?(center|font|marquee|big|strike|blink)\b/gi;while((m=obs.exec(clean)))add('warn',lineAt(m.index),'Balise obsolète <'+m[1].toLowerCase()+'> : utilise du CSS');
+  const sre=/<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  while((m=sre.exec(src))){
+    if(/\bsrc=/.test(m[1])||/type=["']?(module|application\/json|text\/template)/.test(m[1])||!m[2].trim())continue;
+    const start=m.index+m[0].indexOf('>')+1;lintJS(m[2],lineAt(start)-1).forEach(x=>it.push(x));
+  }
+  const cre=/<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+  while((m=cre.exec(src))){const start=m.index+m[0].indexOf('>')+1;lintCSS(m[1],lineAt(start)-1).forEach(x=>it.push(x));}
+  return it;
+}
+const CSSPROPS=new Set('color background background-color background-image background-size background-position background-repeat margin margin-top margin-bottom margin-left margin-right padding padding-top padding-bottom padding-left padding-right border border-radius border-color border-width border-style border-top border-bottom display position width height min-width max-width min-height max-height font font-size font-family font-weight font-style text-align text-decoration text-transform letter-spacing line-height flex flex-direction flex-wrap flex-grow flex-shrink flex-basis grid grid-template-columns grid-template-rows grid-template-areas grid-area grid-column grid-row gap row-gap column-gap align-items align-content align-self justify-content justify-items justify-self place-items place-content overflow overflow-x overflow-y opacity transition transform animation animation-name animation-duration cursor content z-index top left right bottom box-shadow text-shadow box-sizing outline visibility float clear list-style object-fit object-position filter backdrop-filter white-space word-break pointer-events user-select resize aspect-ratio inset scroll-behavior touch-action will-change fill stroke'.split(' '));
+function lintCSS(src,off=0){
+  const it=[],add=(l,line,m)=>it.push({lvl:l,line:line?line+off:0,msg:m});
+  balance(src,'css').forEach(b=>add('err',b.line,b.msg));
+  const lines=src.split('\n');let depth=0;
+  lines.forEach((raw,i)=>{
+    const t=raw.replace(/\/\*.*?\*\//g,'').trim();if(!t)return;
+    const decl=depth>0&&/^[a-z-]+\s*:/i.test(t)&&!t.includes('{')&&!/,\s*$/.test(t);
+    if(decl){
+      const name=t.split(':')[0].trim().toLowerCase();
+      if(name.length>=4&&!name.startsWith('-')&&!CSSPROPS.has(name)){let best=null,bd=3;CSSPROPS.forEach(p=>{const d=lev(name,p);if(d<bd){bd=d;best=p;}});if(best&&bd<=2)add('warn',i+1,'Propriété inconnue « '+name+' » : tu voulais dire « '+best+' » ?');}
+      if(!/[;{},]\s*$/.test(t)){const nx=lines.slice(i+1).find(l=>l.trim());if(nx&&!/^\s*}/.test(nx))add('err',i+1,'Point-virgule « ; » manquant');}
+      if(/!important/.test(t))add('info',i+1,'!important : à éviter, ça complique la maintenance');
+    }
+    depth+=(t.match(/{/g)||[]).length-(t.match(/}/g)||[]).length;if(depth<0)depth=0;
+  });
+  return it;
+}
+function lintPY(src){
+  const it=[],add=(l,line,m)=>it.push({lvl:l,line,msg:m});
+  const lines=src.replace(/\r/g,'').split('\n');
+  if(lines.some(l=>/^\t/.test(l))&&lines.some(l=>/^ +\S/.test(l)))add('err',0,'Mélange tabulations / espaces pour l’indentation (TabError probable)');
+  balance(src,'python').forEach(b=>add('err',b.line,b.msg));
+  lines.forEach((raw,i)=>{
+    const ln=i+1,t=raw.replace(/\s+#.*$/,'').replace(/^\s*#.*$/,'').trimEnd();if(!t.trim())return;
+    const s=t.trim();
+    if(/^(def|class|if|elif|else|for|while|try|except|finally|with)\b/.test(s)&&!s.includes(':')&&!/[(\[{,\\]$/.test(s))add('err',ln,'Deux-points « : » manquant en fin de ligne');
+    if(/^print\s+["'\w]/.test(s))add('err',ln,'En Python 3, print est une fonction : print(...)');
+    if(/[!=]=\s*None\b/.test(s))add('warn',ln,'Compare avec None via « is None » / « is not None »');
+    if(/def\s+\w+\(.*=\s*(\[\]|\{\})/.test(s))add('warn',ln,'Argument par défaut mutable ([] ou {}) : source de bugs, utilise None');
+    if(/^except\s*:/.test(s))add('warn',ln,'« except: » est trop large : précise l’exception attendue');
+    if(/\b(eval|exec)\(/.test(s))add('warn',ln,'eval/exec : dangereux avec des données externes');
+    if(/^from\s+\S+\s+import\s+\*/.test(s))add('info',ln,'import * pollue l’espace de noms');
+    if(/:\s*$/.test(t)){
+      let j=i+1;while(j<lines.length&&(!lines[j].trim()||/^\s*#/.test(lines[j])))j++;
+      if(j<lines.length){const a=raw.match(/^\s*/)[0].length,b=lines[j].match(/^\s*/)[0].length;if(b<=a)add('err',j+1,'Bloc indenté attendu après la ligne '+ln+' (IndentationError)');}
+      else add('err',ln,'Bloc attendu après « : » (fin du fichier)');
+    }
+  });
+  return it;
+}
+function analyze(src,lang){
+  if(lang==='auto')lang=detectLang(src);
+  let items=[];
+  if(lang==='js')items=lintJS(src);
+  else if(lang==='html')items=lintHTML(src);
+  else if(lang==='css')items=lintCSS(src);
+  else if(lang==='python')items=lintPY(src);
+  else if(lang==='json'){try{JSON.parse(src);}catch(e){items.push({lvl:'err',line:0,msg:'JSON invalide : '+e.message});}}
+  else balance(src,'js').forEach(b=>items.push({lvl:'err',line:b.line,msg:b.msg}));
+  const seen=new Set();items=items.filter(x=>{const k=x.lvl+x.line+x.msg;if(seen.has(k))return false;seen.add(k);return true;});
+  const ord={err:0,warn:1,info:2,ok:3};items.sort((a,b)=>ord[a.lvl]-ord[b.lvl]||a.line-b.line);
+  const ne=items.filter(x=>x.lvl==='err').length,nw=items.filter(x=>x.lvl==='warn').length,ni=items.filter(x=>x.lvl==='info').length;
+  const score=Math.max(0,100-ne*20-nw*6-Math.min(ni,10));
+  return {lang,items,score,ne,nw,ni,lines:src.split('\n').length};
+}
+const LVL={err:'ERREUR',warn:'ATTENTION',info:'CONSEIL',ok:'OK'};
+function renderReport(box,res){
+  const d=document.createElement('div');d.className='rep';
+  d.innerHTML='';
+  const h=document.createElement('div');h.style.marginBottom='8px';
+  h.innerHTML='<b>Langage : '+res.lang.toUpperCase()+'</b> · '+res.lines+' lignes · note <b>'+res.score+'/100</b> · '+res.ne+' erreur(s), '+res.nw+' alerte(s), '+res.ni+' conseil(s)';
+  d.appendChild(h);
+  const items=res.items.length?res.items:[{lvl:'ok',line:0,msg:'Aucun problème évident détecté ✅'}];
+  items.forEach(x=>{const r=document.createElement('div');r.className='it '+x.lvl;const b=document.createElement('b');b.textContent=LVL[x.lvl];const s=document.createElement('span');s.textContent=(x.line?'ligne '+x.line+' — ':'')+x.msg;r.append(b,s);d.appendChild(r);});
+  const n=document.createElement('div');n.className='mut';n.style.marginTop='8px';n.textContent='Analyse heuristique : elle repère beaucoup de pièges, mais ne remplace pas un vrai compilateur.';d.appendChild(n);
+  box.appendChild(d);
+}
+function summaryText(res){
+  const top=res.items.slice(0,8).map(x=>(x.lvl==='err'?'❌ ':x.lvl==='warn'?'⚠️ ':'💡 ')+(x.line?'L'+x.line+' : ':'')+x.msg);
+  return 'J’ai analysé ton code ('+res.lang.toUpperCase()+', '+res.lines+' lignes) — note '+res.score+'/100.\n'+(top.length?top.join('\n'):'✅ Aucun problème évident détecté.')+(res.items.length>8?'\n… et '+(res.items.length-8)+' autre(s) dans l’onglet Code.':'');
+}
+function explainCode(src,lang){
+  if(lang==='auto')lang=detectLang(src);
+  const L=[];const cnt=(re)=>(src.match(re)||[]).length;
+  if(lang==='js'){
+    const fns=[...src.matchAll(/function\s+(\w+)\s*\(([^)]*)\)/g)].map(m=>m[1]+'('+m[2].trim()+')');
+    const ar=[...src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(?([^)=\n]*)\)?\s*=>/g)].map(m=>m[1]+'('+m[2].trim()+')');
+    const cls=[...src.matchAll(/class\s+(\w+)(?:\s+extends\s+(\w+))?/g)].map(m=>m[1]+(m[2]?' (hérite de '+m[2]+')':''));
+    const ev=[...new Set([...src.matchAll(/addEventListener\(\s*['"](\w+)['"]/g)].map(m=>m[1]))];
+    if(cls.length)L.push('Classes : '+cls.join(', '));
+    if(fns.length||ar.length)L.push('Fonctions : '+[...fns,...ar].join(', '));
+    if(ev.length)L.push('Réagit aux événements : '+ev.join(', '));
+    if(/getElementById|querySelector/.test(src))L.push('Manipule la page (DOM) : lit/modifie des éléments HTML.');
+    if(/fetch\(|XMLHttpRequest/.test(src))L.push('Fait des requêtes réseau (fetch).');
+    if(/async|await|Promise/.test(src))L.push('Utilise du code asynchrone (async/await/Promise).');
+    if(/setInterval|setTimeout|requestAnimationFrame/.test(src))L.push('Utilise des timers / une boucle d’animation.');
+    if(/getContext\(/.test(src))L.push('Dessine sur un canvas (jeu ou graphique).');
+    if(/localStorage/.test(src))L.push('Sauvegarde des données dans le navigateur (localStorage).');
+    if(/Math\.random/.test(src))L.push('Utilise de l’aléatoire.');
+    L.push('Structure : '+cnt(/\b(for|while)\b/g)+' boucle(s), '+cnt(/\bif\b/g)+' condition(s), '+cnt(/\breturn\b/g)+' return, '+cnt(/\b(const|let|var)\b/g)+' variable(s).');
+  }else if(lang==='html'){
+    const tag=n=>cnt(new RegExp('<'+n+'\\b','gi'));
+    const title=(src.match(/<title>([^<]*)/i)||[])[1];
+    if(title)L.push('Titre de la page : « '+title.trim()+' »');
+    L.push('Structure : '+tag('div')+' div, '+tag('section')+' section, '+tag('p')+' paragraphe(s), '+(tag('h1')+tag('h2')+tag('h3'))+' titre(s), '+tag('a')+' lien(s), '+tag('img')+' image(s), '+tag('button')+' bouton(s).');
+    if(tag('form'))L.push('Contient '+tag('form')+' formulaire(s) avec '+tag('input')+' champ(s).');
+    if(tag('canvas'))L.push('Contient un canvas (dessin/jeu).');
+    if(tag('style'))L.push('Style CSS intégré.');
+    if(/<script\b/i.test(src))L.push('JavaScript intégré : la page est interactive.');
+    if(/viewport/i.test(src))L.push('Prévue pour mobile (meta viewport).');
+  }else if(lang==='css'){
+    L.push(cnt(/\{/g)+' règle(s) CSS.');
+    if(/display\s*:\s*flex/.test(src))L.push('Utilise Flexbox.');
+    if(/display\s*:\s*grid/.test(src))L.push('Utilise CSS Grid.');
+    if(/@media/.test(src))L.push('Responsive : contient des media queries.');
+    if(/@keyframes|animation/.test(src))L.push('Contient des animations.');
+    if(/var\(--/.test(src))L.push('Utilise des variables CSS.');
+    if(/transition/.test(src))L.push('Contient des transitions.');
+  }else if(lang==='python'){
+    const imp=[...src.matchAll(/^\s*(?:import|from)\s+([\w.]+)/gm)].map(m=>m[1]);
+    const df=[...src.matchAll(/def\s+(\w+)\s*\(([^)]*)\)/g)].map(m=>m[1]+'('+m[2].trim()+')');
+    const cl=[...src.matchAll(/class\s+(\w+)/g)].map(m=>m[1]);
+    if(imp.length)L.push('Imports : '+[...new Set(imp)].join(', '));
+    if(cl.length)L.push('Classes : '+cl.join(', '));
+    if(df.length)L.push('Fonctions : '+df.join(', '));
+    L.push('Structure : '+cnt(/^\s*for\b/gm)+' boucle(s) for, '+cnt(/^\s*while\b/gm)+' while, '+cnt(/^\s*(if|elif)\b/gm)+' condition(s).');
+    if(/input\(/.test(src))L.push('Demande une saisie à l’utilisateur.');
+    if(/open\(/.test(src))L.push('Lit ou écrit des fichiers.');
+  }else if(lang==='json'){
+    try{const o=JSON.parse(src);L.push(Array.isArray(o)?'Tableau de '+o.length+' élément(s).':'Objet avec les clés : '+Object.keys(o).join(', '));}catch(e){L.push('JSON invalide : '+e.message);}
+  }else L.push('Je sais surtout expliquer JS, HTML, CSS, Python et JSON.');
+  return 'Résumé ('+lang.toUpperCase()+') :\n• '+L.join('\n• ');
+}
+function fmtBraces(src){
+  let depth=0;const out=[];
+  for(const raw of src.replace(/\r/g,'').split('\n')){
+    const t=raw.trim();if(!t){if(out.length&&out[out.length-1]!=='')out.push('');continue;}
+    const lead=(t.match(/^[}\])]+/)||[''])[0].length;
+    const code=t.replace(/(["'`])(?:\\.|(?!\1).)*\1/g,'""').replace(/\/\/.*$/,'');
+    const o=(code.match(/[{[(]/g)||[]).length,c=(code.match(/[}\])]/g)||[]).length;
+    out.push('  '.repeat(Math.max(0,depth-lead))+t);
+    depth=Math.max(0,depth+o-c);
+  }
+  return out.join('\n');
+}
+function fmtHTML(src){
+  const VOID=/^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/i;
+  let depth=0,mode=null,bd=0;const out=[];
+  for(const raw of src.replace(/\r/g,'').split('\n')){
+    const t=raw.trim();if(!t){continue;}
+    if(mode){
+      if(/^<\/(script|style)/i.test(t)){mode=null;depth=Math.max(0,depth-1);out.push('  '.repeat(depth)+t);continue;}
+      const code=t.replace(/(["'`])(?:\\.|(?!\1).)*\1/g,'""');
+      const lead=(t.match(/^[}\])]+/)||[''])[0].length;
+      out.push('  '.repeat(depth+Math.max(0,bd-lead))+t);
+      bd=Math.max(0,bd+(code.match(/[{[(]/g)||[]).length-(code.match(/[}\])]/g)||[]).length);
+      continue;
+    }
+    const closers=(t.match(/<\/[a-z][^>]*>/gi)||[]).length;
+    const openers=(t.match(/<[a-z][\w:-]*(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)||[]).filter(x=>!/\/>$/.test(x)&&!VOID.test(x.match(/<([\w:-]+)/)[1])).length;
+    const d=/^<\//.test(t)?Math.max(0,depth-1):depth;
+    out.push('  '.repeat(d)+t);
+    depth=Math.max(0,depth+openers-closers);
+    if(/^<(script|style)\b/i.test(t)&&!/<\/(script|style)>/i.test(t)){mode=1;bd=0;}
+  }
+  return out.join('\n');
+}
+function formatCode(src,lang){
+  if(lang==='json'){try{return JSON.stringify(JSON.parse(src),null,2);}catch(e){return null;}}
+  if(lang==='html')return fmtHTML(src);
+  if(lang==='python')return null;
+  return fmtBraces(src);
+}
+function minifyCode(src,lang){
+  let s=src;
+  if(lang==='html')s=s.replace(CMT,'').split('\n').map(l=>l.trim()).filter(Boolean).join('\n');
+  else if(lang==='css')s=s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').replace(/\s*([{}:;,])\s*/g,'$1').replace(/;}/g,'}').trim();
+  else if(lang==='js')s=s.replace(/\/\*[\s\S]*?\*\//g,'').split('\n').map(l=>l.replace(/^\s*\/\/.*$/,'').trim()).filter(Boolean).join('\n');
+  else if(lang==='json'){try{s=JSON.stringify(JSON.parse(s));}catch(e){}}
+  else return null;
+  return s;
+}
+
+/* ---------- Onglet Code ---------- */
+const ed=$('ed'),cout=$('cout');
+function curLang(){const v=$('lang').value;return v==='auto'?detectLang(ed.value):v;}
+function openInEditor(src,lang){showTab('code');ed.value=src;if(lang&&[...$('lang').options].some(o=>o.value===lang))$('lang').value=lang;else $('lang').value='auto';cout.innerHTML='';}
+ed.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=ed.selectionStart;ed.value=ed.value.slice(0,s)+'  '+ed.value.slice(ed.selectionEnd);ed.selectionStart=ed.selectionEnd=s+2;}});
+function findTemplate(text){
+  const n=norm(text);let best=null,bs=0;
+  const wantPy=/python/.test(n),wantJs=/javascript|\bjs\b/.test(n);
+  for(const t of T){
+    let s=scoreKeys(t.k,text);if(!s)continue;
+    if(wantPy&&t.lang==='python')s+=.6;if(wantPy&&t.lang!=='python')s-=.3;
+    if(wantJs&&t.lang==='js')s+=.4;
+    if(s>bs){bs=s;best=t;}
+  }
+  return {t:best,s:bs};
+}
+function doGenerate(){
+  const q=$('gen').value.trim();if(!q)return;
+  const r=findTemplate(q);
+  cout.innerHTML='';
+  if(r.t&&r.s>=.85){ed.value=r.t.code;$('lang').value=r.t.lang;const m=document.createElement('div');m.className='rep';m.textContent='✅ « '+r.t.title+' » chargé dans l’éditeur. Clique sur ▶ Exécuter pour le tester.';cout.appendChild(m);}
+  else{const m=document.createElement('div');m.className='rep';m.textContent='Je n’ai pas ce modèle. Modèles disponibles : '+T.map(t=>t.title).join(' · ');cout.appendChild(m);}
+}
+$('genbtn').onclick=doGenerate;
+$('gen').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doGenerate();}});
+(function(){const box=$('tplchips');T.forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=t.title;b.onclick=()=>{ed.value=t.code;$('lang').value=t.lang;cout.innerHTML='';};box.appendChild(b);});})();
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+  const a=b.dataset.a,src=ed.value,lang=curLang();cout.innerHTML='';
+  if(a==='clear'){ed.value='';return;}
+  if(a==='copy'){copyText(src,b);return;}
+  if(!src.trim()){const m=document.createElement('div');m.className='rep';m.textContent='L’éditeur est vide. Colle du code ou génère un modèle.';cout.appendChild(m);return;}
+  if(a==='analyze'){renderReport(cout,analyze(src,$('lang').value));}
+  else if(a==='run'){
+    if(lang==='python'||lang==='sql'||lang==='json'){const m=document.createElement('div');m.className='rep';m.textContent='Je peux exécuter HTML, CSS et JavaScript dans cette page. '+(lang==='python'?'Python a besoin d’un interpréteur Python (lance-le sur ton PC ou dans Termux).':'Ce format n’est pas exécutable.');cout.appendChild(m);return;}
+    const box=document.createElement('div');box.style.marginTop='12px';cout.appendChild(box);runInto(box,lang,src);
+  }
+  else if(a==='format'){const r=formatCode(src,lang);const m=document.createElement('div');m.className='rep';if(r===null){m.textContent=lang==='python'?'Python est déjà structuré par l’indentation : je ne le reformate pas pour ne pas casser ton code.':'Impossible de formater (JSON invalide ?).';cout.appendChild(m);}else{ed.value=r;m.textContent='✨ Code reformaté.';cout.appendChild(m);}}
+  else if(a==='minify'){const r=minifyCode(src,lang);const m=document.createElement('div');m.className='rep';if(r===null){m.textContent='La minification est disponible pour HTML, CSS, JS et JSON.';}else{ed.value=r;m.textContent='🗜️ '+src.length+' → '+r.length+' caractères (−'+Math.round(100-r.length/src.length*100)+' %). Minification simple : relis le résultat avant de l’utiliser.';}cout.appendChild(m);}
+  else if(a==='explain'){const m=document.createElement('div');m.className='rep';m.textContent=explainCode(src,$('lang').value);cout.appendChild(m);}
+});
+
+/* ---------- Analyse de photo (100 % locale) ---------- */
+function loadImage(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>res({img,url});img.onerror=()=>rej(new Error('Image illisible (format non pris en charge ?)'));img.src=url;});}
+async function analyzeImage(file){
+  const {img,url}=await loadImage(file);
+  const W=img.naturalWidth,H=img.naturalHeight,sc=Math.min(1,256/Math.max(W,H));
+  const w=Math.max(2,Math.round(W*sc)),h=Math.max(2,Math.round(H*sc));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
+  const d=cx.getImageData(0,0,w,h).data,N=w*h,gray=new Float32Array(N);
+  let sr=0,sg=0,sb=0,sl=0,sl2=0,ss=0,skin=0,green=0,blue=0,dark=0,white=0,warm=0,cool=0;
+  const bins=new Map();let tr=0,tg=0,tb=0,tn=0,br=0,bg=0,bb=0,bn=0;
+  for(let i=0;i<N;i++){
+    const r=d[i*4],g=d[i*4+1],b=d[i*4+2],l=.299*r+.587*g+.114*b,mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;
+    gray[i]=l;sr+=r;sg+=g;sb+=b;sl+=l;sl2+=l*l;ss+=s;
+    if(r>95&&g>40&&b>20&&mx-mn>15&&Math.abs(r-g)>15&&r>g&&r>b)skin++;
+    if(g>r*1.1&&g>b*1.1&&g>60)green++;
+    if(b>r*1.1&&b>g&&b>80)blue++;
+    if(l<40)dark++;
+    if(l>215&&s<.12)white++;
+    if(r>b+25)warm++;if(b>r+25)cool++;
+    const key=((r>>5)<<6)|((g>>5)<<3)|(b>>5);let e=bins.get(key);if(!e){e={n:0,r:0,g:0,b:0};bins.set(key,e);}e.n++;e.r+=r;e.g+=g;e.b+=b;
+    const y=(i/w)|0;
+    if(y<h/3){tr+=r;tg+=g;tb+=b;tn++;}else if(y>=2*h/3){br+=r;bg+=g;bb+=b;bn++;}
+  }
+  const luma=sl/N,contrast=Math.sqrt(Math.max(0,sl2/N-luma*luma));
+  // palette
+  const sorted=[...bins.values()].sort((a,b)=>b.n-a.n),pal=[];
+  for(const e of sorted){
+    const c=[e.r/e.n,e.g/e.n,e.b/e.n];
+    const near=pal.find(p=>Math.hypot(p.rgb[0]-c[0],p.rgb[1]-c[1],p.rgb[2]-c[2])<55);
+    if(near)near.n+=e.n;else if(pal.length<6)pal.push({rgb:c,n:e.n});
+  }
+  const palette=pal.sort((a,b)=>b.n-a.n).map(p=>({rgb:p.rgb,hex:hx(...p.rgb),pct:Math.round(p.n/N*100)})).filter(p=>p.pct>=1);
+  const fewColors=[...bins.values()].filter(e=>e.n/N>.005).length;
+  // netteté (Laplacien) + bords (Sobel)
+  let lm=0,lv=0,ln=0,edges=0,en=0;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+    const i=y*w+x,lap=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-w]-gray[i+w];lm+=lap;lv+=lap*lap;ln++;
+    const gx=gray[i-w+1]+2*gray[i+1]+gray[i+w+1]-gray[i-w-1]-2*gray[i-1]-gray[i+w-1];
+    const gy=gray[i+w-1]+2*gray[i+w]+gray[i+w+1]-gray[i-w-1]-2*gray[i-w]-gray[i-w+1];
+    if(Math.hypot(gx,gy)>110)edges++;en++;
+  }
+  const sharp=ln?lv/ln-(lm/ln)*(lm/ln):0,edge=en?edges/en:0;
+  const top=tn?[tr/tn,tg/tn,tb/tn]:[0,0,0],bot=bn?[br/bn,bg/bn,bb/bn]:[0,0,0];
+  const R={green:green/N,blue:blue/N,skin:skin/N,dark:dark/N,white:white/N};
+  const tags=[];
+  if(top[2]>top[0]+15&&top[2]>top[1]-5&&lumaOf(...top)>100)tags.push('ciel ou mer (zone bleue en haut)');
+  if(top[0]>170&&top[1]>70&&top[1]<170&&top[2]<120)tags.push('coucher de soleil / lumière chaude');
+  if(R.green>.25)tags.push('végétation / nature (beaucoup de vert)');
+  if(R.skin>.12&&R.skin<.7)tags.push('personne ou visage probable (tons chair)');
+  if(R.dark>.55)tags.push('scène sombre / nuit');
+  if(R.white>.5&&edge>.04)tags.push('document, texte ou capture claire');
+  if(fewColors<=14&&edge>.03)tags.push('capture d’écran, interface ou illustration (peu de couleurs, bords nets)');
+  if(ss/N<.12)tags.push('image presque en noir et blanc');
+  const native={};
+  try{if('FaceDetector' in window){native.faces=(await new FaceDetector().detect(img)).length;}}catch(e){}
+  try{if('BarcodeDetector' in window){native.codes=(await new BarcodeDetector().detect(img)).map(x=>x.rawValue);}}catch(e){}
+  try{if('TextDetector' in window){native.text=(await new TextDetector().detect(img)).map(x=>x.rawValue).join(' ').trim();}}catch(e){}
+  const ratio=W/H;
+  return {url,name:file.name||'photo',size:file.size||0,W,H,w,h,cv,
+    orient:Math.abs(ratio-1)<.06?'carré':ratio>1?'paysage':'portrait',ratio:ratio.toFixed(2).replace('.',','),
+    avg:[sr/N,sg/N,sb/N],luma,contrast,sat:ss/N,sharp,edge,warm:warm/N,cool:cool/N,palette,tags,native,fewColors,
+    thumb:(()=>{try{return cv.toDataURL('image/jpeg',.8);}catch(e){return '';}})()};
+}
+function describeImage(r){
+  const L=[];
+  L.push('📷 '+r.W+'×'+r.H+' px · '+r.orient+' · '+fmtSize(r.size));
+  L.push('• Luminosité : '+(r.luma<60?'très sombre':r.luma<110?'plutôt sombre':r.luma<170?'équilibrée':'très lumineuse')+' ('+Math.round(r.luma/2.55)+' %)');
+  L.push('• Contraste : '+(r.contrast<35?'faible':r.contrast<65?'moyen':'fort'));
+  L.push('• Couleurs : '+(r.sat<.12?'quasi noir et blanc':r.sat<.35?'douces':'vives')+', ambiance '+(r.warm>r.cool*1.3?'chaude':r.cool>r.warm*1.3?'froide':'neutre'));
+  L.push('• Netteté : '+(r.sharp<30?'floue ou très lisse':r.sharp<120?'correcte':'nette'));
+  L.push('• Contenu probable : '+(r.tags.length?r.tags.join(' ; '):'difficile à deviner (mon analyse repose sur les pixels, pas sur une vraie reconnaissance d’objets)'));
+  if(r.native.faces!==undefined)L.push('• Visages détectés par ton navigateur : '+r.native.faces);
+  if(r.native.codes&&r.native.codes.length)L.push('• Code-barres / QR : '+r.native.codes.join(', '));
+  if(r.native.text)L.push('• Texte détecté : '+r.native.text.slice(0,200));
+  return L.join('\n');
+}
+function imageParts(r){
+  return [{t:'img',src:r.url},{t:'text',v:describeImage(r)},{t:'swatches',colors:r.palette},{t:'text',v:'Je peux en tirer du code :'},
+    {t:'actions',list:[{label:'Palette CSS',cmd:'palette de la photo'},{label:'Dégradé',cmd:'dégradé de la photo'},{label:'ASCII art',cmd:'ascii de la photo'},{label:'Pixel art',cmd:'pixel art de la photo'},{label:'Page thème',cmd:'page thème de la photo'}]}];
+}
+function toAscii(cv,cols=70){
+  const rows=Math.max(1,Math.round(cols*cv.height/cv.width*.5));
+  const c=document.createElement('canvas');c.width=cols;c.height=rows;
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(cv,0,0,cols,rows);
+  const d=x.getImageData(0,0,cols,rows).data,ramp=' .:-=+*#%@';let o='';
+  for(let y=0;y<rows;y++){for(let i=0;i<cols;i++){const p=(y*cols+i)*4,l=(.299*d[p]+.587*d[p+1]+.114*d[p+2])/255;o+=ramp[Math.min(9,Math.floor(l*10))];}o+='\n';}
+  return o;
+}
+function toPixelArt(cv,n=24){
+  const s=n/Math.max(cv.width,cv.height),w=Math.max(1,Math.round(cv.width*s)),h=Math.max(1,Math.round(cv.height*s));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(cv,0,0,w,h);
+  const d=x.getImageData(0,0,w,h).data,cols=[];
+  for(let i=0;i<w*h;i++)cols.push('#'+(d[i*4]>>4).toString(16)+(d[i*4+1]>>4).toString(16)+(d[i*4+2]>>4).toString(16));
+  return '<!DOCTYPE html>\n<html lang="fr"><head><meta charset="UTF-8"><title>Pixel art</title></head>\n<body style="margin:0;background:#111;display:grid;place-items:center;min-height:100vh">\n<canvas id="c" style="image-rendering:pixelated;width:min(90vmin,480px)"></canvas>\n<script>\nconst W='+w+',H='+h+',D=\''+cols.join(',')+'\'.split(\',\');\nconst c=document.getElementById(\'c\');c.width=W;c.height=H;\nconst x=c.getContext(\'2d\');\nD.forEach((col,i)=>{x.fillStyle=col;x.fillRect(i%W,Math.floor(i/W),1,1);});\n'+SCL+'\n</body></html>';
+}
+function themePage(r){
+  const p=r.palette.length?r.palette:[{hex:'#0b1020',rgb:[11,16,32]}];
+  const light=r.luma>150;
+  const darkest=[...p].sort((a,b)=>lumaOf(...a.rgb)-lumaOf(...b.rgb))[0],lightest=[...p].sort((a,b)=>lumaOf(...b.rgb)-lumaOf(...a.rgb))[0];
+  const accent=[...p].sort((a,b)=>satOf(...b.rgb)-satOf(...a.rgb))[0];
+  const bg=light?lightest.hex:darkest.hex,fg=lumaOf(...(light?lightest:darkest).rgb)>140?'#111111':'#ffffff';
+  return '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Ma page</title>\n<style>\n  :root{--bg:'+bg+';--fg:'+fg+';--accent:'+accent.hex+'}\n  *{box-sizing:border-box;margin:0}\n  body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;line-height:1.6}\n  header{min-height:70vh;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url('+(r.thumb?'"'+r.thumb+'"':'""')+') center/cover}\n  header h1{font-size:clamp(2rem,7vw,4rem);color:#fff}\n  header p{color:#fff;opacity:.9;margin:12px 0 22px}\n  a.cta{display:inline-block;padding:12px 26px;border-radius:999px;background:var(--accent);color:'+(lumaOf(...accent.rgb)>140?'#111':'#fff')+';text-decoration:none;font-weight:700}\n  section{max-width:760px;margin:auto;padding:48px 24px}\n  h2{color:var(--accent);margin-bottom:10px}\n</style>\n</head>\n<body>\n<header><div><h1>Titre de ma page</h1><p>Un thème généré à partir des couleurs de ta photo.</p><a class="cta" href="#a">Découvrir</a></div></header>\n<section id="a"><h2>À propos</h2><p>Remplace ce texte par le tien. Les couleurs de la page viennent directement de ta photo.</p></section>\n</body>\n</html>';
+}
+function imgTool(name){
+  if(!lastImage)return 'Envoie-moi d’abord une photo avec le bouton 📎 (ou dans l’onglet Photo), puis redemande-moi 📷';
+  const r=lastImage;
+  if(name==='describe')return imageParts(r);
+  if(name==='palette'){
+    const css=':root{\n'+r.palette.map((p,i)=>'  --c'+(i+1)+': '+p.hex+'; /* '+p.pct+' % */').join('\n')+'\n}';
+    return [{t:'text',v:'Palette CSS extraite de ta photo :'},{t:'swatches',colors:r.palette},{t:'code',lang:'css',v:css}];
+  }
+  if(name==='grad'){
+    const cs=r.palette.slice(0,4).map(p=>p.hex);if(cs.length<2)cs.push(cs[0]||'#000');
+    const css='.fond{\n  background:linear-gradient(135deg, '+cs.join(', ')+');\n}';
+    return [{t:'text',v:'Dégradé CSS aux couleurs de ta photo :'},{t:'code',lang:'css',v:css}];
+  }
+  if(name==='ascii')return [{t:'text',v:'Ta photo en ASCII art (colle-la dans une police à chasse fixe) :'},{t:'code',lang:'txt',v:toAscii(r.cv,60)}];
+  if(name==='pixel')return [{t:'text',v:'Ta photo en pixel art, prête à exécuter :'},{t:'code',lang:'html',v:toPixelArt(r.cv,24)}];
+  if(name==='page')return [{t:'text',v:'Une page web dont le thème et l’image d’en-tête viennent de ta photo :'},{t:'code',lang:'html',v:themePage(r)}];
+  return 'Je ne connais pas cette action.';
+}
+const IMGCMD=[['ascii',/ascii/],['pixel',/pixel/],['grad',/degrade|gradient/],['palette',/palette|couleurs? (dominante|principale)|quelles couleurs/],['page',/(page|site).*(theme|photo|image|couleur)|theme.*(photo|image)/],['describe',/(decri|analys|regarde).*(photo|image)|que vois tu|qu est ce que tu vois/]];
+
+async function handleImage(file,from){
+  if(!file||!/^image\//.test(file.type||'image/')){return;}
+  try{
+    if(from==='chat'){
+      const url=URL.createObjectURL(file);addMe([{t:'img',src:url},{t:'text',v:'Voici une photo.'}]);
+    }
+    const r=await analyzeImage(file);lastImage=r;
+    if(from==='chat')botSay(imageParts(r));
+    else renderPhotoTab(r);
+  }catch(e){
+    const msg='Je n’ai pas réussi à lire cette image : '+e.message;
+    if(from==='chat')botSay(msg);else $('pout').innerHTML='<div class="rep">'+msg+'</div>';
+  }
+}
+function renderPhotoTab(r){
+  const box=$('pout');box.innerHTML='';
+  const parts=imageParts(r).slice(0,3);
+  const card=document.createElement('div');card.className='rep';renderParts(parts,card);
+  const outBox=document.createElement('div');
+  const tools=[['Palette CSS','palette'],['Dégradé','grad'],['ASCII art','ascii'],['Pixel art','pixel'],['Page thème','page']];
+  const acts=document.createElement('div');acts.className='acts';acts.style.margin='12px 0';
+  tools.forEach(([l,k])=>{const b=document.createElement('button');b.className='btn';b.textContent=l;b.onclick=()=>{outBox.innerHTML='';const c=document.createElement('div');c.className='rep';renderParts(imgTool(k),c);outBox.appendChild(c);};acts.appendChild(b);});
+  const tc=document.createElement('button');tc.className='btn solid';tc.textContent='💬 En parler dans le chat';tc.onclick=()=>{showTab('chat');botSay(imageParts(r));};acts.appendChild(tc);
+  box.append(card,acts,outBox);
+}
+$('attach').onclick=()=>$('chatfile').click();
+$('chatfile').onchange=e=>{handleImage(e.target.files[0],'chat');e.target.value='';};
+$('pick').onclick=()=>$('pf').click();$('cam').onclick=()=>$('pcam').click();
+$('pf').onchange=e=>{handleImage(e.target.files[0],'photo');e.target.value='';};
+$('pcam').onchange=e=>{handleImage(e.target.files[0],'photo');e.target.value='';};
+const dropEl=$('drop');
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();dropEl.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();dropEl.classList.remove('over');}));
+document.addEventListener('drop',e=>{const f=[...(e.dataTransfer?.files||[])].find(x=>/^image\//.test(x.type));if(f){const onPhoto=$('v-photo').classList.contains('on');handleImage(f,onPhoto?'photo':'chat');if(!onPhoto&&!$('v-chat').classList.contains('on'))showTab('chat');}});
+document.addEventListener('paste',e=>{const it=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();const onPhoto=$('v-photo').classList.contains('on');handleImage(it.getAsFile(),onPhoto?'photo':'chat');}});
+
+/* ---------- Mémoire (onglet) ---------- */
+function renderMem(){
+  const root=$('memroot');root.innerHTML='';
+  const card=(title)=>{const c=document.createElement('div');c.className='card';const h=document.createElement('b');h.textContent=title;c.appendChild(h);root.appendChild(c);return c;};
+  const li=(c,txt,del)=>{const r=document.createElement('div');r.className='li';const s=document.createElement('span');s.textContent=txt;r.appendChild(s);if(del){const b=document.createElement('button');b.textContent='✕';b.title='Supprimer';b.onclick=del;r.appendChild(b);}c.appendChild(r);};
+  const h=document.createElement('h2');h.textContent='🧠 Mémoire de NKVA';root.appendChild(h);
+  let c=card('Toi');
+  li(c,mem.name?'Prénom : '+mem.name:'Prénom inconnu (dis « je m’appelle … » dans le chat)',mem.name?()=>{mem.name=null;saveMem();renderMem();}:null);
+  c=card('Faits retenus ('+mem.facts.length+')');
+  if(!mem.facts.length)li(c,'Rien pour l’instant. Dis « retiens que … » dans le chat.');
+  mem.facts.forEach((f,i)=>li(c,f,()=>{mem.facts.splice(i,1);saveMem();renderMem();}));
+  c=card('Ce que tu lui as appris ('+mem.learned.length+')');
+  if(!mem.learned.length)li(c,'Rien pour l’instant.');
+  mem.learned.forEach((e,i)=>li(c,e.q+'  →  '+e.a,()=>{mem.learned.splice(i,1);saveMem();renderMem();}));
+  c=card('Enseigner une nouvelle réponse');
+  const form=document.createElement('div');form.style.cssText='display:grid;gap:8px;margin-top:8px';
+  const q=document.createElement('input');q.type='text';q.placeholder='Quand on me dit… (question)';
+  const a=document.createElement('input');a.type='text';a.placeholder='…je réponds (réponse)';
+  const ok=document.createElement('button');ok.className='btn solid';ok.textContent='Apprendre';
+  ok.onclick=()=>{if(q.value.trim()&&a.value.trim()){mem.learned=mem.learned.filter(e=>norm(e.q)!==norm(q.value));mem.learned.push({q:q.value.trim(),a:a.value.trim()});saveMem();renderMem();}};
+  form.append(q,a,ok);c.appendChild(form);
+  c=card('Sauvegarde');
+  const row=document.createElement('div');row.className='acts';
+  const ex=document.createElement('button');ex.className='btn';ex.textContent='⬇ Exporter';
+  ex.onclick=()=>{const b=new Blob([JSON.stringify(mem,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a2=document.createElement('a');a2.href=u;a2.download='nkva-memoire.json';a2.click();setTimeout(()=>URL.revokeObjectURL(u),2000);};
+  const im=document.createElement('button');im.className='btn';im.textContent='⬆ Importer';
+  const fi=document.createElement('input');fi.type='file';fi.accept='application/json';fi.hidden=true;
+  fi.onchange=()=>{const f=fi.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);mem={name:o.name||null,learned:Array.isArray(o.learned)?o.learned:[],facts:Array.isArray(o.facts)?o.facts:[]};saveMem();renderMem();}catch(e){alert('Fichier invalide');}});};
+  im.onclick=()=>fi.click();
+  const rs=document.createElement('button');rs.className='btn danger';rs.textContent='Tout effacer';
+  rs.onclick=()=>{if(confirm('Effacer toute la mémoire de NKVA ?')){mem={name:null,learned:[],facts:[]};saveMem();renderMem();}};
+  row.append(ex,im,rs,fi);c.appendChild(row);
+}
+
+/* ---------- Cerveau : small talk ---------- */
+const INTENTS=[
+  {k:['salut','bonjour','coucou','hello','hey','bonsoir','yo','wesh'],r:['Salut{n} ! Je suis NKVA. Qu’est-ce qu’on fait : du code, une photo, une discussion ?','Hey{n} ! Content de te voir. Quoi de neuf ?','Bonjour{n} ! Je t’écoute.']},
+  {k:['ca va','comment vas tu','comment tu vas','la forme','tu vas bien'],r:['Je vais très bien, je tourne à 100 % dans ton navigateur. Et toi ?','Super forme, aucun serveur ne me ralentit 😄 Et toi ?']},
+  {k:['ca va bien','je vais bien','tres bien','super','genial','cool','top','parfait'],r:['Content de l’entendre ! 😊','Super, on fait quoi maintenant ?']},
+  {k:['ca va mal','je vais mal','triste','deprime','pas bien','fatigue','stresse'],r:['Je suis désolé que ça n’aille pas. Tu veux m’en parler ? Sinon je peux te raconter une blague pour te changer les idées.','Courage. Respire un coup, je suis là.']},
+  {k:['qui es tu','tu es qui','c est quoi nkva','presente toi','qui est nkva','tu t appelles comment','comment tu t appelles'],r:['Je suis NKVA : un bot « IA » 100 % HTML/JavaScript, sans API. Je discute, j’analyse des photos, et j’écris et corrige du code. Je progresse quand tu m’apprends des choses.']},
+  {k:['qui t a cree','qui t a fait','ton createur','qui t a programme'],r:['C’est toi qui m’as fait faire, donc tu es un peu mon créateur 😎']},
+  {k:['que sais tu faire','tu sais faire quoi','aide','help','tes commandes','que peux tu faire','a quoi tu sers','fonctions'],r:['Voilà ce que je sais faire :\n💬 Discuter, calculer (« calcule 12*(3+4) »), heure/date, blagues, dé, pile ou face\n💻 Coder : « fais-moi un snake », « fetch », « centrer une div »… ; colle ton code et je l’analyse ; explique les erreurs (« x is not defined »)\n🖼️ Photo : envoie-en une avec 📎 → description, palette, dégradé, ASCII, pixel art, page thème\n🔧 Outils : « 255 en binaire », « #22d3ee en rgb », « 10 km en miles », « mot de passe »\n🧠 Mémoire : « je m’appelle … », « retiens que … », « apprends: question => réponse »']},
+  {k:['merci','thanks','thx','merci beaucoup'],r:['De rien{n} !','Avec plaisir 😊','Toujours là pour ça.']},
+  {k:['au revoir','a plus','bye','a bientot','bonne nuit','ciao','adieu'],r:['À bientôt{n} !','Bye ! Reviens quand tu veux.','Bonne continuation{n} 👋']},
+  {k:['blague','drole','fais moi rire','humour','raconte une blague'],r:['Pourquoi les développeurs confondent Halloween et Noël ? Parce que 31 OCT = 25 DEC.','Un programmeur part faire les courses. Sa femme lui dit : « Prends une baguette, et s’il y a des œufs, prends-en six. » Il revient avec six baguettes : « Il y avait des œufs. »','Quel est le comble pour un électricien ? De ne pas être au courant.','Il y a 10 types de personnes : celles qui comprennent le binaire et les autres.','Je ferais bien une blague sur UDP, mais je ne suis pas sûr qu’elle te parvienne.','Pourquoi les poissons détestent l’ordinateur ? À cause du net.']},
+  {k:['je t aime','tu m aimes','on est amis','t es sympa','t es gentil'],r:['C’est gentil ! Je suis un programme, mais je suis content de discuter avec toi 😄']},
+  {k:['idiot','stupide','debile','tu sers a rien','t es bete','tu es nul'],r:['Aïe 😅 Je fais de mon mieux. Apprends-moi ce qui me manque avec « apprends: question => réponse » !']},
+  {k:['tu es une ia','es tu une ia','tu es un robot','chatgpt','tu penses','tu es conscient','tu es intelligent'],r:['Je suis une « IA » artisanale : je compare ce que tu écris à ce que je connais (mots-clés, similarité, mémoire) et j’analyse du code et des pixels avec des algorithmes classiques. Pas de réseau de neurones géant, mais je ne t’invente rien.']},
+  {k:['meteo','quel temps','il pleut','temperature dehors'],r:['Je n’ai pas accès à internet, donc pas de météo. Regarde par la fenêtre 🌤️']},
+  {k:['jouer','fortnite','minecraft','jeux video','gaming'],r:['Les jeux vidéo, c’est top ! Je peux même t’en coder un : essaie « fais-moi un snake », « un pong » ou « un morpion ».']},
+  {k:['musique','chanson','chanteur','playlist'],r:['J’adore la musique, même sans oreilles 🎧 Tu écoutes quoi en ce moment ?']},
+  {k:['quel age as tu','ton age','tu es ne quand'],r:['Pas vraiment d’âge : je « nais » à chaque ouverture de la page.']},
+  {k:['oui','ouais','ok','d accord','yes','ouep'],r:['Parfait 👍','D’accord !','Ok, je te suis.']},
+  {k:['non','nope','pas du tout','jamais'],r:['Ok, pas de souci.','D’accord, on laisse tomber.']},
+  {k:['je m ennuie','ennui','ennuye','je sais pas quoi faire'],r:['Essayons : dis « blague », « fais-moi un snake », ou envoie-moi une photo à analyser !']},
+];
+function bestIntent(text){let best=null,bs=0;for(const it of INTENTS){const s=scoreKeys(it.k,text);if(s>bs){bs=s;best=it;}}return {it:best,s:bs};}
+
+/* ---------- Capacités spéciales ---------- */
+function safeMath(text){
+  let s=text.toLowerCase().replace(/combien (fait|font|ca fait|est)|calcule[rz]?|resultat de|egal|=|\?/g,' ').replace(/,/g,'.').replace(/[x×]/g,'*').replace(/÷/g,'/').replace(/\^/g,'**')
+    .replace(/\bplus\b/g,'+').replace(/\bmoins\b/g,'-').replace(/\bfois\b/g,'*').replace(/\bdivise par\b/g,'/').replace(/(\d)\s*%\s*de\s*(\d)/g,'($1/100)*$2').replace(/\s+/g,'');
+  if(!/\d/.test(s)||!/[+\-*/]/.test(s)||!/^[\d+\-*/().%]+$/.test(s))return null;
+  try{const v=Function('"use strict";return ('+s+')')();if(typeof v!=='number'||!isFinite(v))return 'Résultat impossible (division par zéro ?).';return 'Résultat : '+(Math.round(v*1e10)/1e10);}catch(e){return null;}
+}
+const UNITS={km:'km',kilometre:'km',kilometres:'km',mile:'mi',miles:'mi',kg:'kg',kilo:'kg',kilos:'kg',lb:'lb',livre:'lb',livres:'lb',c:'c',celsius:'c',f:'f',fahrenheit:'f',m:'m',metre:'m',metres:'m',pied:'ft',pieds:'ft',ft:'ft'};
+const CONV={'km>mi':v=>v*.621371,'mi>km':v=>v/.621371,'kg>lb':v=>v*2.20462,'lb>kg':v=>v/2.20462,'c>f':v=>v*9/5+32,'f>c':v=>(v-32)*5/9,'m>ft':v=>v*3.28084,'ft>m':v=>v/3.28084};
+function tools(raw){
+  const n=norm(raw);let m;
+  if((m=n.match(/(\d+)\s*(?:en|vers|->)\s*(binaire|hexa|hexadecimal|octal)/))){const v=+m[1];return v+' en '+m[2]+' : '+(m[2]==='binaire'?v.toString(2):m[2]==='octal'?v.toString(8):v.toString(16).toUpperCase());}
+  if((m=raw.toLowerCase().match(/\b(0b[01]+|0x[0-9a-f]+)\b.*(?:en|vers)\s*decimal/)))return m[1]+' = '+Number(m[1]);
+  if((m=n.match(/(binaire|hexa|hexadecimal|octal)\s+([0-9a-f]+)\s+(?:en|vers)\s+decimal/))){const b=m[1]==='binaire'?2:m[1]==='octal'?8:16,v=parseInt(m[2],b);if(!isNaN(v))return m[2]+' ('+m[1]+') = '+v+' en décimal';}
+  if((m=raw.match(/rgb\(?\s*(\d{1,3})\s*[ ,]\s*(\d{1,3})\s*[ ,]\s*(\d{1,3})/i))){const [r,g,b]=[+m[1],+m[2],+m[3]].map(v=>Math.min(255,v));return 'rgb('+r+', '+g+', '+b+') = '+hx(r,g,b);}
+  if((m=raw.match(/#([0-9a-f]{6}|[0-9a-f]{3})\b/i))&&/rgb|couleur|convert|hex/i.test(raw)){let h=m[1];if(h.length===3)h=h.split('').map(c=>c+c).join('');return '#'+h+' = rgb('+parseInt(h.slice(0,2),16)+', '+parseInt(h.slice(2,4),16)+', '+parseInt(h.slice(4,6),16)+')';}
+  if((m=n.match(/(-?\d+(?:[.,]\d+)?)\s*([a-z]+)\s+(?:en|vers|to)\s+([a-z]+)/))){const a=UNITS[m[2]],b=UNITS[m[3]];const f=CONV[a+'>'+b];if(f){const v=f(parseFloat(m[1].replace(',','.')));return m[1]+' '+m[2]+' = '+(Math.round(v*1000)/1000).toString().replace('.',',')+' '+m[3];}}
+  if(/mot de passe|password/.test(n)){const len=Math.min(64,Math.max(8,+((n.match(/(\d+)/)||[])[1])||16)),cs='abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*?',a=new Uint32Array(len);(window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*4e9)}).getRandomValues(a);return 'Mot de passe de '+len+' caractères :\n'+[...a].map(v=>cs[v%cs.length]).join('');}
+  if(/\buuid\b/.test(n))return crypto.randomUUID?crypto.randomUUID():'UUID indisponible sur ce navigateur';
+  if(/timestamp/.test(n))return 'Timestamp actuel : '+Math.floor(Date.now()/1000)+' (secondes) · '+Date.now()+' (ms)';
+  if(/couleur aleatoire|couleur au hasard/.test(n)){const c=hx(...[0,0,0].map(()=>Math.random()*255));return 'Couleur aléatoire : '+c;}
+  if((m=n.match(/capitale (?:de la |de l |du |des |de |d )?(.+)/))){const k=m[1].replace(/\s+/g,' ').trim(),v=CAPITALES[k];if(v)return 'La capitale est : '+v+'.';return 'Je ne connais pas la capitale de « '+k+' ». Apprends-la-moi avec « apprends: capitale de '+k+' => … ».';}
+  return null;
+}
+function special(raw){
+  const n=norm(raw);let m;
+  if((m=raw.match(/^\s*(?:apprends?|learn)\s*[:\-]?\s*([\s\S]+?)\s*(?:=>|->|=)\s*([\s\S]+)$/i))){
+    const q=m[1].trim(),a=m[2].trim();mem.learned=mem.learned.filter(e=>norm(e.q)!==norm(q));mem.learned.push({q,a});saveMem();
+    return 'C’est noté ! Si tu me demandes « '+q+' », je répondrai : « '+a+' ».';
+  }
+  if((m=raw.match(/(?:je m ?['’]?appelle|mon (?:prenom|prénom|nom) (?:est|c['’]est)|moi c['’]est)\s+([A-Za-zÀ-ÿ\-]{2,20})/i))){mem.name=m[1][0].toUpperCase()+m[1].slice(1);saveMem();return 'Enchanté '+mem.name+' ! Je m’en souviendrai, même si tu fermes la page.';}
+  if(/(comment je m ?appelle|quel est mon (prenom|nom)|tu sais qui je suis)/.test(n))return mem.name?'Tu t’appelles '+mem.name+'.':'Je ne connais pas encore ton prénom. Dis-moi : « je m’appelle … ».';
+  if((m=raw.match(/^\s*(?:retiens|souviens[- ]toi|note)(?: bien)?(?: que| :)?\s+([\s\S]+)/i))){mem.facts.push(m[1].trim());saveMem();return 'Retenu ✔️ : « '+m[1].trim()+' »';}
+  if(/(que sais tu de moi|ce que tu as retenu|tes souvenirs)/.test(n)){const L=[];if(mem.name)L.push('Ton prénom : '+mem.name);mem.facts.forEach((f,i)=>L.push((i+1)+'. '+f));return L.length?'Voilà ce que je sais :\n'+L.join('\n'):'Je ne sais encore rien sur toi. Dis « retiens que … » !';}
+  if(/(oublie tout|efface (ta |ma )?memoire|reinitialise)/.test(n)){mem={name:null,learned:[],facts:[]};saveMem();return 'Mémoire effacée. On repart de zéro 🧼';}
+  if(/(combien (de choses )?as tu appris|liste (de )?(tes )?connaissances|qu as tu appris)/.test(n))return mem.learned.length?'J’ai appris '+mem.learned.length+' chose(s) :\n'+mem.learned.map(e=>'• '+e.q).join('\n'):'Tu ne m’as encore rien appris. Essaie « apprends: question => réponse ».';
+  if(/(quelle heure|l heure|heure est il)/.test(n))return 'Il est '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'.';
+  if(/(quel jour|la date|date d aujourd|on est quel|quelle date|jour sommes)/.test(n))return 'Nous sommes le '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';
+  if(/pile ou face/.test(n))return rand(['Pile ! 🪙','Face ! 🪙']);
+  if(/(lance|jette|lancer).*\bde\b|\bun de\b/.test(n)){const sides=(n.match(/\bd(\d{1,3})\b/)||[])[1]||6;return '🎲 Tu obtiens un '+(1+Math.floor(Math.random()*sides))+' (dé à '+sides+' faces).';}
+  if((m=n.match(/nombre (?:aleatoire )?entre (\d+) et (\d+)/))){const a=+m[1],b=+m[2],lo=Math.min(a,b),hi=Math.max(a,b);return 'Mon tirage : '+(lo+Math.floor(Math.random()*(hi-lo+1)));}
+  return safeMath(raw);
+}
+function explainError(raw){
+  const low=raw.toLowerCase();
+  for(const [re,fn] of ERRS){const m=low.match(re);if(m&&(raw.length>6)){
+    if(re.source==='\\b404\\b'&&!/erreur|error|http|page|serveur/.test(low))continue;
+    return '🛠️ Explication de l’erreur :\n'+fn(m);}}
+  return null;
+}
+function looksLikeCode(raw){
+  if(!raw.includes('\n'))return /^\s*(function|const|let|def|class|import|<!doctype|<html|<div)\b/i.test(raw)&&(raw.match(/[{};=<>()]/g)||[]).length>=8;
+  return (raw.match(/[{};=<>()]/g)||[]).length>=8||/^\s*(function|const|let|var|def|class|import|<!doctype|<html|<div|<script|@media|\.[\w-]+\s*\{)/im.test(raw);
+}
+const CODEVERB=/\b(fais|fait|cree|creer|genere|ecris|code|coder|programme|donne|montre|exemple|script|developpe)\b/;
+function templateReply(t){
+  return [{t:'text',v:'Voilà : « '+t.title+' ». Tu peux le copier, l’exécuter ici ou l’ouvrir dans l’éditeur pour le modifier.'},{t:'code',lang:t.lang,v:t.code}];
+}
+
+/* ---------- Cerveau principal ---------- */
+function reply(raw){
+  const n=norm(raw);
+  if(/^(encore|une autre|un autre|autre|again)$/.test(n)&&lastRaw)return reply(lastRaw);
+  const sp=special(raw);if(sp){lastRaw=raw;return sp;}
+  const tl=tools(raw);if(tl){lastRaw=raw;return tl;}
+  const er=explainError(raw);if(er)return er;
+
+  if(/(photo|image|picture|selfie)/.test(n)||lastImage){
+    for(const [name,re] of IMGCMD)if(re.test(n)&&(lastImage||/(photo|image)/.test(n)))return imgTool(name);
+  }
+  if(looksLikeCode(raw)&&!/^(fais|cree|genere|ecris)/.test(n)){
+    const res=analyze(raw,'auto');
+    return [{t:'text',v:summaryText(res)},{t:'actions',list:[{label:'Ouvrir dans l’éditeur',fn:()=>openInEditor(raw,res.lang)},{label:'Expliquer',fn:()=>{showTab('code');openInEditor(raw,res.lang);const m=document.createElement('div');m.className='rep';m.textContent=explainCode(raw,res.lang);cout.appendChild(m);}}]}];
+  }
+  if(/(analyse|verifie|corrige|debug).*(code|script|programme)|mon code (ne marche|bug|plante)/.test(n))return 'Colle ton code directement ici (je l’analyse tout de suite), ou ouvre l’onglet 💻 Code pour l’analyser, l’exécuter, le formater et l’expliquer.';
+
+  const isQ=/^(c est quoi|qu est ce|explique|difference|pourquoi|comment (ca|fonctionne|marche)|a quoi sert|definition|qu est)/.test(n);
+  const learned=bestLearned(raw);if(learned)return learned.a;
+  const short=tokens(raw).length<=3,bi=bestIntent(raw);
+  if(short&&bi.s>=1.2&&bi.it){lastRaw=raw;return rand(bi.it.r).replace(/\{n\}/g,mem.name?' '+mem.name:'');}
+
+  const kbHit=()=>{const k=kbLookup(raw);if(!k)return null;const p=[{t:'text',v:k.a}];if(k.c)p.push({t:'code',lang:k.l||'js',v:k.c});return p;};
+  const tplHit=()=>{const r=findTemplate(raw);if(r.t&&(r.s>=1.1||(r.s>=.85&&(CODEVERB.test(n)||tokens(raw).length<=4))))return templateReply(r.t);return null;};
+  const order=isQ?[kbHit,tplHit]:[tplHit,kbHit];
+  for(const f of order){const r=f();if(r)return r;}
+
+  if(bi.it&&bi.s>=.85){lastRaw=raw;return rand(bi.it.r).replace(/\{n\}/g,mem.name?' '+mem.name:'');}
+  if(/(fais|cree|genere|code|programme).*(jeu|appli|application|site|page|programme|bot)/.test(n))return 'Je peux te coder directement : '+T.slice(0,12).map(t=>t.title).join(', ')+'… Dis-moi lequel (ex. « fais-moi un snake »). Pour autre chose, ouvre l’onglet 💻 Code : tu y trouveras tous les modèles.';
+  const m=n.match(/(?:c est quoi|qu est ce que|qu est ce qu|definition de)\s+(.+)/);
+  if(m)return 'Je ne connais pas « '+m[1]+' ». Apprends-le-moi : « apprends: '+m[1]+' => … »';
+  return rand(['Hmm, je ne sais pas encore répondre à ça. Tu peux me l’apprendre : « apprends: ta question => ma réponse ».','Je n’ai pas compris. Reformule, colle du code, envoie une photo, ou dis « aide » pour voir ce que je sais faire.','Je suis encore en apprentissage 🤓 Dis « aide » pour voir mes pouvoirs.']);
+}
+function bestLearned(text){
+  const q=new Set(keyTokens(text));if(!q.size)return null;let best=null,bs=0;
+  for(const e of mem.learned){
+    const t=new Set(keyTokens(e.q));if(!t.size)continue;let inter=0;
+    for(const a of q)for(const b of t)if(sameWord(a,b)){inter++;break;}
+    const sim=inter/(q.size+t.size-inter);if(sim>bs){bs=sim;best=e;}
+  }
+  return bs>=.5?best:null;
+}
+
+/* ---------- Chat : envoi ---------- */
+const inp=$('in');
+
+/* ---------- Vraie IA locale (WebLLM) ---------- */
+const llm={engine:null,ready:false,busy:false,hist:[],sentImg:null,lib:null,loading:false};
+function llmStatus(t,p){$('llmtxt').style.color='';$('llmtxt').textContent=t;if(typeof p==='number')$('llmbar').style.width=Math.round(p*100)+'%';}
+async function diag(){
+  const L=[];
+  L.push('Adresse : '+location.protocol+'//'+(location.host||'(fichier local)'));
+  L.push('Contexte sécurisé : '+(window.isSecureContext?'oui':'NON'));
+  L.push('WebGPU (navigator.gpu) : '+(navigator.gpu?'présent':'ABSENT'));
+  if(navigator.gpu){try{const a=await navigator.gpu.requestAdapter();L.push('Carte graphique WebGPU : '+(a?'trouvée ✔':'AUCUNE (WebGPU bloqué ou non supporté)'));}catch(e){L.push('requestAdapter a échoué : '+e.message);}}
+  L.push('Cache navigateur (stockage du modèle) : '+(('caches' in window)?'disponible':'INDISPONIBLE'));
+  L.push('Mémoire de l’appareil (approx.) : '+(navigator.deviceMemory?navigator.deviceMemory+' Go':'inconnue'));
+  L.push('Navigateur : '+navigator.userAgent.slice(0,110));
+  return L.join('\n');
+}
+$('llmdiag').onclick=async()=>{const o=$('llmdiagout');o.style.display='block';o.textContent='Diagnostic en cours…';o.textContent=await diag();};
+async function importAny(urls){
+  let last=null;
+  for(const u of urls){try{return await import(u);}catch(e){last=e;}}
+  throw new Error('Impossible de charger la bibliothèque IA depuis internet (réseau bloqué, pas de connexion, ou aperçu sans accès). Détail : '+(last&&last.message?last.message:last));
+}
+const WEBLLM_URLS=['https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.79/+esm','https://esm.run/@mlc-ai/web-llm@0.2.79','https://unpkg.com/@mlc-ai/web-llm@0.2.79?module'];
+const TJS_URLS=['https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/+esm','https://esm.run/@huggingface/transformers@3.5.1','https://unpkg.com/@huggingface/transformers@3.5.1?module'];
+async function hasGPU(){try{return !!(navigator.gpu&&await navigator.gpu.requestAdapter());}catch(e){return false;}}
+async function cacheOK(){try{if(!('caches' in window))return false;await caches.open('nkva-test');return true;}catch(e){return false;}}
+async function loadTJS(id,prog){
+  const T=await importAny(TJS_URLS);
+  try{T.env.allowLocalModels=false;if(!(await cacheOK()))T.env.useBrowserCache=false;const w=T.env.backends&&T.env.backends.onnx&&T.env.backends.onnx.wasm;if(w){w.numThreads=1;w.proxy=false;}}catch(e){}
+  const dev='wasm';
+  const gen=await T.pipeline('text-generation',id,{dtype:'q4',device:dev,progress_callback:p=>{
+    if(p.status==='progress')prog('Téléchargement '+(p.file||'')+' : '+Math.round(p.progress)+' %',p.progress/100);
+    else prog((p.status||'')+' '+(p.file||''),null);}});
+  return {chat:{completions:{create:async function(req){
+    const q=[];let wake=null,err=null;
+    const push=v=>{q.push(v);if(wake){const w=wake;wake=null;w();}};
+    const streamer=new T.TextStreamer(gen.tokenizer,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>push(t)});
+    gen(req.messages,{max_new_tokens:Math.min(req.max_tokens||600,600),do_sample:true,temperature:req.temperature||.5,streamer})
+      .then(()=>push(null)).catch(e=>{err=e;push(null);});
+    return (async function*(){
+      while(true){
+        if(!q.length)await new Promise(r=>{wake=r;});
+        const v=q.shift();
+        if(v===null){if(err)throw err;return;}
+        yield {choices:[{delta:{content:v}}]};
+      }
+    })();
+  }}}};
+}
+async function loadLLM(){
+  if(llm.loading)return;
+  llm.loading=true;$('llmgo').disabled=true;
+  let id=$('llmsel').value;
+  store.set('loading',id);
+  const prog=(t,p)=>llmStatus(t,typeof p==='number'?p:undefined);
+  try{
+    if(!id.startsWith('tjs:')&&!(await hasGPU())){
+      id='tjs:onnx-community/Qwen2.5-Coder-0.5B-Instruct';$('llmsel').value=id;
+      llmStatus('WebGPU inutilisable sur cet appareil → passage automatique en mode compatible (CPU).',0.02);
+    }
+    if(id.startsWith('tjs:')){
+      prog('Chargement de la bibliothèque… (internet requis la 1re fois)',0.02);
+      llm.engine=await loadTJS(id.slice(4),prog);
+    }else{
+      try{
+        prog('Chargement de la bibliothèque… (internet requis la 1re fois)',0.02);
+        if(!llm.lib)llm.lib=await importAny(WEBLLM_URLS);
+        const cfg=Object.assign({},llm.lib.prebuiltAppConfig||{},{useIndexedDBCache:!(await cacheOK())});
+        llm.engine=await llm.lib.CreateMLCEngine(id,{appConfig:cfg,initProgressCallback:p=>llmStatus(p.text||'Chargement…',p.progress||0)});
+      }catch(e1){
+        id='tjs:onnx-community/Qwen2.5-Coder-0.5B-Instruct';$('llmsel').value=id;
+        llmStatus('La carte graphique (WebGPU) a échoué : '+(e1&&e1.message?e1.message:e1)+'\n→ Passage automatique en mode CPU, plus lent mais plus fiable…',0.02);
+        await new Promise(r=>setTimeout(r,1200));
+        llm.engine=await loadTJS(id.slice(4),prog);
+      }
+    }
+    llm.ready=true;llm.hist=[];store.set('llmmodel',id);store.set('loading',null);
+    $('llmpill').textContent='activée ✔';$('llmpill').classList.add('on');
+    llmStatus('✅ IA prête ('+id.replace('tjs:','')+'). Va dans le chat et parle-lui !',1);
+    $('llmgo').textContent='↻ Changer de modèle';
+    botSay('🤖 La vraie IA est activée ! Pose-moi n’importe quelle question, colle du code à corriger ou demande-moi un programme.');
+  }catch(e){
+    llm.ready=false;
+    const d=await diag();
+    llmStatus('❌ Échec : '+(e&&e.message?e.message:e)+'\n\n'+d+'\n\nEssaie un modèle du « Mode compatible », ouvre le fichier dans Chrome (pas dans un aperçu), et vérifie ta connexion pour le 1er téléchargement.',0);
+    $('llmtxt').style.whiteSpace='pre-wrap';$('llmtxt').style.color='#f87171';
+    botSay('❌ L’IA n’a pas pu démarrer : '+(e&&e.message?e.message:e)+'\nOuvre l’onglet 🤖 pour le diagnostic complet.');
+  }
+  store.set('loading',null);llm.loading=false;$('llmgo').disabled=false;
+}
+
+async function connectLocal(auto){
+  const url=($('srvurl').value||'').trim().replace(/\/+$/,''),st=t=>{$('srvtxt').textContent=t;};
+  if(llm.loading||llm.ready&&auto)return;
+  try{
+    if(!auto)st('Connexion à '+url+'…');
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),auto?1500:8000);
+    const r=await fetch(url+'/v1/models',{signal:ctl.signal});clearTimeout(to);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    llm.engine={chat:{completions:{create:async function(req){
+      const resp=await fetch(url+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:req.messages,stream:true,temperature:req.temperature||.5,max_tokens:req.max_tokens||1500})});
+      if(!resp.ok)throw new Error('Serveur local : HTTP '+resp.status);
+      const reader=resp.body.getReader(),dec=new TextDecoder();
+      return (async function*(){
+        let buf='';
+        while(true){
+          const {done,value}=await reader.read();if(done)return;
+          buf+=dec.decode(value,{stream:true});let i;
+          while((i=buf.indexOf('\n'))>=0){
+            const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+            if(!line.startsWith('data:'))continue;
+            const d=line.slice(5).trim();if(d==='[DONE]')return;
+            try{yield JSON.parse(d);}catch(e){}
+          }
+        }
+      })();
+    }}}};
+    llm.ready=true;llm.hist=[];store.set('srvurl',url);
+    $('llmpill').textContent='activée ✔ (serveur local)';$('llmpill').classList.add('on');
+    st('✅ Connecté à '+url+'. Va dans le chat !');
+    llmStatus('✅ IA prête (serveur local '+url+').',1);
+    botSay('🤖 Connecté à l’IA locale (Termux). Pose-moi n’importe quelle question !');
+  }catch(e){
+    if(!auto)st('❌ Impossible de joindre '+url+' : '+(e&&e.message?e.message:e)+'. Le serveur tourne-t-il dans Termux ? (llama-server …)');
+  }
+}
+$('srvgo').onclick=()=>connectLocal(false);
+try{const u=store.get('srvurl',null);if(u)$('srvurl').value=u;}catch(e){}
+setTimeout(()=>connectLocal(true),600);
+$('llmgo').onclick=loadLLM;
+try{
+  const crashed=store.get('loading',null);
+  if(crashed){
+    store.set('loading',null);store.set('llmmodel',null);
+    $('llmsel').value='tjs:HuggingFaceTB/SmolLM2-135M-Instruct';
+    $('llmtxt').style.color='#fbbf24';
+    $('llmtxt').textContent='⚠️ La page a planté pendant le chargement précédent ('+crashed.replace('tjs:','')+') : ton téléphone manque de mémoire. J’ai sélectionné le modèle le plus léger. Ferme tes autres onglets Chrome avant de réessayer.';
+  }
+}catch(e){}
+try{const m=store.get('llmmodel',null);if(m&&[...$('llmsel').options].some(o=>o.value===m)){$('llmsel').value=m;$('llmgo').textContent='⬇ Réactiver (déjà téléchargé = rapide)';}}catch(e){}
+function mdParts(s){
+  const parts=[],re=/```([\w+-]*)\n?([\s\S]*?)```/g;let last=0,m;
+  while((m=re.exec(s))){
+    if(m.index>last)parts.push({t:'text',v:s.slice(last,m.index).trim()});
+    parts.push({t:'code',lang:(m[1]||'txt').toLowerCase().replace('javascript','js').replace('py','python').replace('python','python'),v:m[2].replace(/\n$/,'')});
+    last=re.lastIndex;
+  }
+  if(last<s.length)parts.push({t:'text',v:s.slice(last).trim()});
+  return parts.filter(p=>p.v);
+}
+function sysPrompt(){
+  let p='Tu es NKVA, un assistant IA expert en programmation (HTML, CSS, JavaScript, Python, SQL, Git, algorithmes) et aussi un compagnon de discussion sympa. Tu réponds en français sauf si on te parle dans une autre langue. Sois clair, précis et concis. Quand tu écris du code, donne un code complet qui fonctionne, dans un bloc markdown avec le langage, puis explique brièvement. Si tu n’es pas sûr, dis-le au lieu d’inventer.';
+  if(mem.name)p+=' L’utilisateur s’appelle '+mem.name+'.';
+  if(mem.facts.length)p+=' Faits à retenir sur l’utilisateur : '+mem.facts.join(' ; ')+'.';
+  return p;
+}
+async function askLLM(text){
+  if(llm.busy){botSay('Une seconde, je finis ma réponse précédente…');return;}
+  llm.busy=true;
+  let user=text;
+  if(lastImage&&llm.sentImg!==lastImage){user='[Contexte : l’utilisateur a envoyé une photo. Analyse automatique des pixels :\n'+describeImage(lastImage)+'\nPalette : '+lastImage.palette.map(p=>p.hex).join(', ')+'\nTu ne vois pas la photo, uniquement cette analyse.]\n\n'+text;llm.sentImg=lastImage;}
+  llm.hist.push({role:'user',content:user});
+  if(llm.hist.length>12)llm.hist=llm.hist.slice(-12);
+  const el=document.createElement('div');el.className='msg bot typing';el.innerHTML='<i></i><i></i><i></i>';
+  chat.appendChild(el);scrollDown();
+  let acc='';
+  try{
+    const stream=await llm.engine.chat.completions.create({messages:[{role:'system',content:sysPrompt()},...llm.hist],stream:true,temperature:.5,max_tokens:1500});
+    el.className='msg bot';el.innerHTML='';
+    for await(const ch of stream){
+      const d=ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;
+      if(d){acc+=d;el.textContent=acc;scrollDown();}
+    }
+    el.innerHTML='';renderParts(mdParts(acc),el);scrollDown();
+    llm.hist.push({role:'assistant',content:acc});
+  }catch(e){
+    el.className='msg bot';el.textContent='⚠️ Erreur de l’IA : '+(e&&e.message?e.message:e);
+    llm.hist.pop();
+  }
+  llm.busy=false;
+}
+async function send(text){
+  text=text.trim();if(!text)return;
+  addMe(text);
+  if(llm.ready){
+    const loc=special(text)||tools(text);
+    if(loc){botSay(loc);return;}
+    return askLLM(text);
+  }
+  const r=reply(text);
+  if(!/^(encore|une autre|un autre)$/.test(norm(text))&&typeof r==='string')lastRaw=text;
+  botSay(r);
+}
+$('chatform').addEventListener('submit',e=>{e.preventDefault();const v=inp.value;inp.value='';inp.style.height='46px';send(v);});
+inp.addEventListener('input',()=>{inp.style.height='46px';inp.style.height=Math.min(inp.scrollHeight,140)+'px';});
+inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('chatform').dispatchEvent(new Event('submit',{cancelable:true}));}});
+['Aide','Fais-moi un snake','Blague','Calcule 12*(3+4)','255 en binaire','Centrer une div','Mot de passe','Capitale du Japon'].forEach(s=>{
+  const b=document.createElement('button');b.type='button';b.textContent=s;b.onclick=()=>send(s);$('chips').appendChild(b);
+});
+setTimeout(()=>botSay(mem.name
+  ?'Re-bonjour '+mem.name+' ! NKVA v2 est de retour. Colle du code, envoie une photo avec 📎, ou dis « aide ».'
+  :'Salut ! Je suis NKVA v2 : 100 % local, sans API. 💻 Je code et je corrige ton code (colle-le ici), 🖼️ j’analyse tes photos (bouton 📎), 🧠 j’apprends ce que tu m’enseignes. Pour une vraie IA qui répond à tout, va dans l’onglet 🤖 Vraie IA. Sinon dis « aide ».'),150);
+</script>
+</body>
+</html>
